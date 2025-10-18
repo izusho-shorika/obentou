@@ -32,7 +32,7 @@
 </head>
 <body>
   <header>
-    <h1>弁当注文アプリ01<span id="app-version" class="tag"></span></h1>
+    <h1>弁当注文アプリ02<span id="app-version" class="tag"></span></h1>
   </header>
   <main>
     <!-- Login View -->
@@ -107,7 +107,7 @@
   <script>
     // ====== 設定 ======
     const APP_VERSION = "v1.0.0";
-    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbwv_Ea7YnK6pUmSdn1LUx1lHHpqA9FUyw-KhMtSLpK3VcF8yr6pQ_KM0GSQUpeWksw_GA/exec"; // 例: https://script.google.com/macros/s/AKfycbxxxx/exec
+    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbwpLBZsHFQWC-JdMD-5UEDrztX8iP-hK0N6s1DezO02B-WBHk9iPpsHb7LyB6DwQisB3g/exec"; // 例: https://script.google.com/macros/s/AKfycbxxxx/exec
     const ORIGIN = location.origin;
 
     // ====== ユーティリティ ======
@@ -137,15 +137,30 @@
 
     // ====== API ======
   async function api(path, method="GET", body=null){
-    const token = store.get("token");
-    const headers = {"Content-Type":"application/json"};
-    const url = `${ENDPOINT_URL}?fn=${encodeURIComponent(path)}`;
-    const payload = body ? {...body} : {};
-    if (token) payload.token = token; // ← ここで body に同梱
-      const res = await fetch(url, {method, headers, body: method==="GET"? null : JSON.stringify(payload)});
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+  const token = localStorage.getItem("token") ? JSON.parse(localStorage.getItem("token")) : null;
+  const url = `${ENDPOINT_URL}?fn=${encodeURIComponent(path)}`;
+
+  if (method === "GET") {
+    const res = await fetch(url, { method: "GET" }); // ヘッダ無し＝プリフライト無し
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } else {
+    // application/x-www-form-urlencoded で送る（プリフライト回避）
+    const form = new URLSearchParams();
+    if (body) {
+      for (const [k, v] of Object.entries(body)) {
+        // オブジェクトは文字列化して送る（GAS側でJSON.parse試行）
+        form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v));
+      }
+    }
+    if (token) form.append("token", token);
+
+    const res = await fetch(url, { method: "POST", body: form }); // ヘッダ一切付けない
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
   }
+}
+
 
     // ====== 状態 ======
     let state = {
