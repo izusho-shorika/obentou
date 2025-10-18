@@ -136,15 +136,16 @@
     function toast(el,msg){ el.textContent = msg; setTimeout(()=>{el.textContent=""},4000); }
 
     // ====== API ======
-    async function api(path, method="GET", body=null){
-      const token = store.get("token");
-      const headers = {"Content-Type":"application/json"};
-      if(token) headers["X-Auth-Token"] = token;
-      const url = `${ENDPOINT_URL}?fn=${encodeURIComponent(path)}`;
-      const res = await fetch(url, {method, headers, body: body?JSON.stringify(body):null, mode:"cors", credentials:"omit"});
+  async function api(path, method="GET", body=null){
+    const token = store.get("token");
+    const headers = {"Content-Type":"application/json"};
+    const url = `${ENDPOINT_URL}?fn=${encodeURIComponent(path)}`;
+    const payload = body ? {...body} : {};
+    if (token) payload.token = token; // ← ここで body に同梱
+      const res = await fetch(url, {method, headers, body: method==="GET"? null : JSON.stringify(payload)});
       if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    }
+        return await res.json();
+  }
 
     // ====== 状態 ======
     let state = {
