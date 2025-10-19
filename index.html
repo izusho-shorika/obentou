@@ -207,7 +207,7 @@
   </div>
 
   <script>
-    const APP_VERSION = "v1.4.0"; // 最終デザインバージョン
+    const APP_VERSION = "v1.4.1"; // 最終確定バージョン
     const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycby7UkOFDlta58ktoG9rxjo0mgXHsTM-SACfLRK2dteOEpCpDZ_Ds2kGsdHJTddEfkZIug/exec"; // 👈 ここをデプロイURLに置き換えてください
     const $ = s => document.querySelector(s);
     const $$ = s => document.querySelectorAll(s);
@@ -238,4 +238,78 @@
           const form = new URLSearchParams();
           if (body) for (const [k,v] of Object.entries(body)) form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v));
           if (token) form.append("token", token);
-          res = await fetch(url.toString
+          res = await fetch(url.toString(), { method: "POST", body: form });
+        }
+        
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function showLoading(visible) {
+      $("#loading-overlay").classList.toggle("hidden", !visible);
+      $$('input, button, select').forEach(el => el.disabled = visible);
+    }
+    
+    let state = { me:null, shops:[], chosenShop:null, menu:[], cart:[] };
+
+    /* -------------------------------------------------- */
+    /* ビュー制御ロジック */
+    /* -------------------------------------------------- */
+    
+    async function doLogin(){
+      const id = $("#login-id").value.trim();
+      const pass = $("#login-pass").value.trim();
+      const err = $("#login-error");
+      err.textContent = "";
+
+      if(!id){ err.textContent="IDを入力してください"; return; }
+      if(!/^\d{4}$/.test(pass)){ err.textContent="パスワードは4桁の数字です"; return; }
+      
+      try{
+        const data = await api("login","POST",{id, password: pass});
+        if(data.ok){ 
+            store.set("token", data.token); 
+            store.set("user", data.user); 
+            state.me = data.user; 
+            
+            $("#welcome-message").textContent = `ようこそ、${state.me.name}さん`;
+            
+            await loadDashboard(); 
+            show("view-shop"); 
+        }
+        else { err.textContent = data.error || "ログインに失敗しました"; }
+      }catch(e){ err.textContent = "通信エラー：" + e.message; }
+    }
+
+    async function loadDashboard(){
+      const data = await api("dashboard","GET");
+      state.shops = data.shops || [];
+      
+      const cardBox = $("#shop-cards"); cardBox.innerHTML = "";
+      for(const s of state.shops){ 
+        const div = document.createElement("div"); 
+        div.className = "item";
+        div.innerHTML = `<div class="row-between">
+          <h3 style="margin:0">${s.shop_name}</h3>
+          <span class="tag">選択</span>
+        </div>`;
+        
+        div.dataset.shopId = s.shop_id; 
+        
+        div.onclick = (e) => {
+          $$('#shop-cards .item').forEach(el => el.classList.remove('selected'));
+          div.classList.add('selected');
+
+          state.chosenShop = state.shops.find(shop => shop.shop_id === div.dataset.shopId);
+          setTimeout(enterMenu, 300);
+        };
+        cardBox.appendChild(div);
+      }
+
+      const list = $("#history-list"); list.innerHTML="";
+      for(const h of (data.history||[])){
+        const div = document.createElement("div"); div.className = "item"; div.style.cursor = "default";
+        div.innerHTML = `<div class="row-between"><h4 style="margin:0
