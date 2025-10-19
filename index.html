@@ -77,7 +77,7 @@
     /* リスト/アイテム */
     /* -------------------------------------------------- */
     .list { display: flex; flex-direction: column; gap: 10px; }
-    /* 修正点: 弁当カードをグリッド表示に */
+    /* 弁当カードをグリッド表示に */
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
     
     .list .item, .grid .item {
@@ -207,8 +207,8 @@
   </div>
 
   <script>
-    const APP_VERSION = "v1.4.1"; // 最終確定バージョン
-    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycby7UkOFDlta58ktoG9rxjo0mgXHsTM-SACfLRK2dteOEpCpDZ_Ds2kGsdHJTddEfkZIug/exec"; // 👈 ここをデプロイURLに置き換えてください
+    const APP_VERSION = "v1.4.1"; // 最終確定バージョンに更新
+    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbx56AO3Bu9Wi_IeNLPdLCvusQ5V3ogIBnRGtYfXHTQNXWuAImhVMvbAHPeknLoMYPD-mw/exec"; // 👈 ここをデプロイURLに置き換えてください
     const $ = s => document.querySelector(s);
     const $$ = s => document.querySelectorAll(s);
     const fmtYen = n => `¥${(n||0).toLocaleString('ja-JP')}`;
@@ -312,4 +312,150 @@
       const list = $("#history-list"); list.innerHTML="";
       for(const h of (data.history||[])){
         const div = document.createElement("div"); div.className = "item"; div.style.cursor = "default";
-        div.innerHTML = `<div class="row-between"><h4 style="margin:0
+        div.innerHTML = `<div class="row-between"><h4 style="margin:0">${h.shop_name || ""}</h4><div class="muted">${fmtDate(h.timestamp)}</div></div>
+          <div class="muted" style="margin-top: 5px;">${h.items.map(i=>`${i.item}（${fmtYen(i.unit_price)}）`).join("、")}</div>
+          <div class="row-between" style="border-top: 1px dashed var(--line); margin-top: 8px; padding-top: 8px;"><span>合計</span><span class="price">${fmtYen(h.total)}</span></div>`;
+        list.appendChild(div);
+      }
+      $("#btn-logout").onclick = doLogout;
+    }
+
+    async function enterMenu(){
+      const shopId = state.chosenShop.shop_id;
+      $("#shop-title").textContent = state.chosenShop ? `${state.chosenShop.shop_name}` : "商品を選ぶ";
+      
+      const data = await api("menu","GET");
+      state.menu = (data.menu||[]).filter(m=>String(m.shop_id)===String(shopId) && String(m.enabled) !== 'FALSE');
+      
+      renderMenuCards();
+      state.cart = []; 
+      renderCart(); 
+      
+      show("view-menu");
+    }
+
+    function renderMenuCards(){
+      const cardBox = $("#menu-cards"); cardBox.innerHTML = "";
+      
+      if (state.menu.length === 0) {
+        cardBox.innerHTML = '<p class="muted center" style="grid-column: 1 / -1; margin: 0;">現在、販売中の商品はありません。</p>';
+        return;
+      }
+
+      state.menu.forEach(m => {
+        const div = document.createElement("div");
+        div.className = "item center";
+        div.innerHTML = `<h4 style="margin: 0 0 8px 0;">${m.item}</h4>
+                         <div class="price">${fmtYen(m.price)}</div>`;
+        
+        // カードクリックでカートに追加
+        div.onclick = ()=>{ 
+          state.cart.push({item:m.item, unit_price:Number(m.price)}); 
+          renderCart(); 
+          // 瞬時のフィードバック
+          div.style.backgroundColor = '#f0faff'; 
+          setTimeout(() => div.style.backgroundColor = 'var(--card-bg)', 100);
+        };
+        cardBox.appendChild(div);
+      });
+    }
+
+    function renderCart(){
+      const list = $("#cart-list"); list.innerHTML=""; let total=0;
+      state.cart.forEach((c, idx)=>{
+        total += c.unit_price;
+        const div = document.createElement("div"); div.className="item row-between";
+        div.style.cursor = "default";
+        div.innerHTML = `
+          <div>${c.item}</div>
+          <div class="row" style="gap:6px">
+            <span class="price">${fmtYen(c.unit_price)}</span>
+            <button class="ghost" style="width:auto; padding: 6px 10px; margin:0;" data-idx="${idx}">削除</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+      list.querySelectorAll("button[data-idx]").forEach(b=>{ 
+        b.onclick = (e)=>{ 
+          const i = Number(e.currentTarget.dataset.idx); 
+          state.cart.splice(i,1); 
+          renderCart(); 
+        }; 
+      });
+      $("#cart-total").textContent = fmtYen(total);
+      $("#cart-count").textContent = `${state.cart.length}点`;
+      
+      $("#btn-clear").onclick = ()=>{ state.cart = []; renderCart(); };
+      $("#btn-order").onclick = doOrder;
+    }
+
+    async function doOrder(){
+      if(state.cart.length===0){ alert("商品を追加してください"); return; }
+      const payload = { shop_id: state.chosenShop.shop_id, items: state.cart };
+      try{
+        const res = await api("order","POST",payload);
+        if(res.ok){
+          const itemsMap = res.items.reduce((acc, item) => {
+            acc[item.item] = (acc[item.item] || 0) + 1;
+            return acc;
+          }, {});
+          const itemLines = Object.entries(itemsMap).map(([item, count]) => `・${item} × ${count}点`);
+
+          $("#done-summary").innerHTML = `
+            <strong>日時:</strong> ${fmtDate(res.timestamp)}<br>
+            <strong>店舗:</strong> ${res.shop_name}<br>
+            <strong>合計金額:</strong> <span class="price total">${fmtYen(res.total)}</span><br>
+            <div style="margin-top: 10px;">
+              <strong>注文内容:</strong><br>
+              ${itemLines.join('<br>')}
+            </div>
+          `;
+          show("view-done");
+        }else{ alert(res.error || "注文に失敗しました"); }
+      }catch(e){ alert("通信エラー：" + e.message); }
+    }
+
+    function doLogout(){ 
+      store.del("token"); 
+      store.del("user");
+      state = {me:null, shops:[], chosenShop:null, menu:[], cart:[]}; 
+      $("#login-id").value=""; 
+      $("#login-pass").value=""; 
+      show("view-login"); 
+    }
+    
+    function show(id){ 
+      for(const sec of $$("main > section")) sec.classList.add("hidden"); 
+      document.getElementById(id).classList.remove("hidden"); 
+    }
+
+    // 初期化とイベント設定
+    $("#app-version").textContent = APP_VERSION;
+    $("#btn-login").onclick = doLogin; 
+    $("#btn-back-shop").onclick = ()=> show("view-shop"); 
+    $("#btn-finish").onclick = doLogout;
+
+    (async ()=>{ 
+      const token = store.get("token"); 
+      if(token){ 
+        try{ 
+          showLoading(true);
+          const user = store.get("user"); 
+          state.me = user;
+          if (state.me && state.me.name) {
+             $("#welcome-message").textContent = `ようこそ、${state.me.name}さん`;
+          }
+          await loadDashboard(); 
+          show("view-shop"); 
+        }catch(e){ 
+          doLogout(); 
+        } finally {
+          showLoading(false);
+        }
+      } else { 
+        show("view-login"); 
+      } 
+    })();
+  </script>
+</body>
+</html>
