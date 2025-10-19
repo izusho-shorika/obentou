@@ -80,7 +80,7 @@
     
     .list .item {
       background: #fff; border: 1px solid var(--line); border-radius: 8px; 
-      padding: 12px; transition: border-color 0.2s;
+      padding: 12px; transition: border-color 0.2s, box-shadow 0.2s;
       cursor: pointer;
     }
     /* 店舗/メニュー選択時のフィードバック */
@@ -105,6 +105,14 @@
       border-radius: 999px; padding: 4px 10px; font-size: 12px; margin-left: 8px;
     }
     .spacer{ height: 16px }
+    
+    /* 修正点1: 戻るボタンのサイズ調整のためのスタイル */
+    #btn-back-shop { 
+        width: auto !important; /* 幅を自動調整 */
+        padding: 8px 12px; /* パディングを小さく */
+        font-size: 14px; /* フォントサイズも小さく */
+        margin: 0; /* マージンをリセット */
+    }
 
     /* -------------------------------------------------- */
     /* ローディングオーバーレイ */
@@ -143,6 +151,7 @@
     </section>
 
     <section id="view-shop" class="hidden">
+      <h3 id="welcome-message" style="margin-top:0; font-weight: normal;"></h3>
       <div class="card">
         <h2 style="margin-top:0">弁当屋を選択</h2>
         <div id="shop-cards" class="list"></div>
@@ -157,7 +166,7 @@
     <section id="view-menu" class="hidden">
       <div class="card">
         <div class="row-between">
-          <h2 style="margin:0" id="shop-title">商品を選ぶ</h2>
+          <h2 style="margin:0; flex-grow: 1;" id="shop-title">商品を選ぶ</h2>
           <button class="ghost" id="btn-back-shop">← 戻る</button>
         </div>
         <div style="margin: 16px 0;">
@@ -169,7 +178,7 @@
       <div class="card">
         <h3 style="margin-top:0">注文内容（合計<span id="cart-count" class="tag" style="margin-left:0;">0点</span>）</h3>
         <div id="cart-list" class="list" style="margin-bottom: 10px;"></div>
-        <div class="row-between" style="border-top: 1px solid var(--line); padding-top: 10px;">
+        <div class="row-between" style="border-top: 1px dashed var(--line); padding-top: 10px;">
           <div class="total">合計金額</div><div class="total price" id="cart-total">¥0</div>
         </div>
       </div>
@@ -195,7 +204,7 @@
   </div>
 
   <script>
-    const APP_VERSION = "v1.3.0"; // デザインアップデートバージョン
+    const APP_VERSION = "v1.3.1"; // 修正バージョン
     const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycby7UkOFDlta58ktoG9rxjo0mgXHsTM-SACfLRK2dteOEpCpDZ_Ds2kGsdHJTddEfkZIug/exec"; // 👈 ここをデプロイURLに置き換えてください
     const $ = s => document.querySelector(s);
     const $$ = s => document.querySelectorAll(s);
@@ -238,7 +247,6 @@
 
     function showLoading(visible) {
       $("#loading-overlay").classList.toggle("hidden", !visible);
-      // ローディング中はボタンや入力要素を無効化
       $$('input, button, select').forEach(el => el.disabled = visible);
     }
     
@@ -259,7 +267,18 @@
       
       try{
         const data = await api("login","POST",{id, password: pass});
-        if(data.ok){ store.set("token", data.token); state.me = data.user; await loadDashboard(); show("view-shop"); }
+        if(data.ok){ 
+            store.set("token", data.token); 
+            // ログイン成功時にユーザー情報も保存（リロード時のために）
+            store.set("user", data.user); 
+            state.me = data.user; 
+            
+            // 修正点2: ユーザー名をメッセージにセット
+            $("#welcome-message").textContent = `ようこそ、${state.me.name}さん`;
+            
+            await loadDashboard(); 
+            show("view-shop"); 
+        }
         else { err.textContent = data.error || "ログインに失敗しました"; }
       }catch(e){ err.textContent = "通信エラー：" + e.message; }
     }
@@ -277,17 +296,14 @@
           <span class="tag">選択</span>
         </div>`;
         
-        div.dataset.shopId = s.shop_id; // データ保持
+        div.dataset.shopId = s.shop_id; 
         
-        // カードクリックイベント
         div.onclick = (e) => {
-          // 選択フィードバック
           $$('#shop-cards .item').forEach(el => el.classList.remove('selected'));
           div.classList.add('selected');
 
-          // 選択した店舗IDを保持してからメニューへ
           state.chosenShop = state.shops.find(shop => shop.shop_id === div.dataset.shopId);
-          setTimeout(enterMenu, 300); // 選択フィードバックを0.3秒見せてから遷移
+          setTimeout(enterMenu, 300);
         };
         cardBox.appendChild(div);
       }
@@ -305,7 +321,8 @@
 
     async function enterMenu(){
       const shopId = state.chosenShop.shop_id;
-      $("#shop-title").textContent = state.chosenShop ? `${state.chosenShop.shop_name}のメニュー` : "商品を選ぶ";
+      // 弁当屋の名前のみを表示
+      $("#shop-title").textContent = state.chosenShop ? `${state.chosenShop.shop_name}` : "商品を選ぶ";
       
       const data = await api("menu","GET");
       state.menu = (data.menu||[]).filter(m=>String(m.shop_id)===String(shopId) && String(m.enabled) !== 'FALSE');
@@ -314,7 +331,6 @@
       state.cart = []; 
       renderCart(); 
       
-      // 遷移時にローディングを隠す
       show("view-menu");
     }
 
@@ -330,7 +346,7 @@
       
       $("#btn-add").onclick = ()=>{ 
         const o = sel.options[sel.selectedIndex]; 
-        if(!o) return; // 商品がない場合は何もしない
+        if(!o) return; 
         state.cart.push({item:o.value, unit_price:Number(o.dataset.price)}); 
         renderCart(); 
       };
@@ -341,7 +357,7 @@
       state.cart.forEach((c, idx)=>{
         total += c.unit_price;
         const div = document.createElement("div"); div.className="item row-between";
-        div.style.cursor = "default"; /* カートアイテムはホバーフィードバック不要 */
+        div.style.cursor = "default";
         div.innerHTML = `
           <div>${c.item}</div>
           <div class="row" style="gap:6px">
@@ -371,7 +387,6 @@
       try{
         const res = await api("order","POST",payload);
         if(res.ok){
-          // 完了画面のサマリーを整形
           const itemsMap = res.items.reduce((acc, item) => {
             acc[item.item] = (acc[item.item] || 0) + 1;
             return acc;
@@ -394,6 +409,7 @@
 
     function doLogout(){ 
       store.del("token"); 
+      store.del("user"); // ユーザー情報も削除
       state = {me:null, shops:[], chosenShop:null, menu:[], cart:[]}; 
       $("#login-id").value=""; 
       $("#login-pass").value=""; 
@@ -415,8 +431,13 @@
       const token = store.get("token"); 
       if(token){ 
         try{ 
-          // 起動時にローディングを表示
           showLoading(true);
+          // 修正点2: ログイン情報が残っている場合もメッセージを設定
+          const user = store.get("user"); 
+          state.me = user;
+          if (state.me && state.me.name) {
+             $("#welcome-message").textContent = `ようこそ、${state.me.name}さん`;
+          }
           await loadDashboard(); 
           show("view-shop"); 
         }catch(e){ 
