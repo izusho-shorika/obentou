@@ -5,135 +5,79 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <title>弁当注文アプリ05</title>
   <style>
-    /* -------------------------------------------------- */
-    /* ベーススタイル */
-    /* -------------------------------------------------- */
     :root {
-      --primary: #4a90e2; /* メインカラー（青） */
+      --primary: #4a90e2;
       --primary-dark: #3a79c9;
-      --bg: #f7f9fc; /* 全体背景 */
+      --bg: #f7f9fc;
       --fg: #1a1a1a;
       --muted: #666;
       --line: #e0e0e0;
       --card-bg: #ffffff;
       --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
       --radius: 10px;
-      --spacing: 16px; /* 基本のスペーシング */
+      --spacing: 16px;
     }
     * { box-sizing: border-box }
-    html, body { 
-      margin: 0; padding: 0; background: var(--bg); color: var(--fg); 
+    html, body {
+      margin: 0; padding: 0; background: var(--bg); color: var(--fg);
       font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     }
-    
-    /* -------------------------------------------------- */
-    /* レイアウトとコンポーネント */
-    /* -------------------------------------------------- */
-    header { 
-      position: sticky; top: 0; background: var(--card-bg); 
-      border-bottom: 1px solid var(--line); padding: 12px var(--spacing); z-index: 10;
-    }
+    header { position: sticky; top: 0; background: var(--card-bg);
+      border-bottom: 1px solid var(--line); padding: 12px var(--spacing); z-index: 10; }
     header h1 { font-size: 18px; margin: 0 }
     main { padding: var(--spacing); max-width: 720px; margin: 0 auto; }
-    
-    .card { 
-      background: var(--card-bg); border: 1px solid var(--line); 
-      border-radius: var(--radius); padding: var(--spacing); 
-      margin: 20px 0; box-shadow: var(--shadow); 
-    }
-    
+    .card { background: var(--card-bg); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: var(--spacing); margin: 20px 0; box-shadow: var(--shadow); }
     .row { display: flex; gap: 10px; align-items: center; }
     .row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    
-    /* -------------------------------------------------- */
-    /* フォーム要素 */
-    /* -------------------------------------------------- */
+
     input, select, button {
-      font-size: 16px; padding: 12px; border-radius: 8px; 
+      font-size: 16px; padding: 12px; border-radius: 8px;
       border: 1px solid var(--line); width: 100%; margin: 8px 0;
       transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
     }
-    
-    input:focus, select:focus {
-      border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
-    }
-    
-    button {
-      background: var(--primary); color: #fff; border: none; font-weight: 600;
-      cursor: pointer;
-    }
+    input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(74,144,226,0.2); }
+    button { background: var(--primary); color: #fff; border: none; font-weight: 600; cursor: pointer; }
     button:hover { background: var(--primary-dark); }
     button:active { background: var(--primary-dark); transform: scale(0.99); }
-
-    button.ghost {
-      background: #f1f5f9; color: var(--fg); border: 1px solid var(--line);
-    }
+    button.ghost { background: #f1f5f9; color: var(--fg); border: 1px solid var(--line); }
     button.ghost:hover { background: #e2e8f0; }
-    
     .danger { background: #d32f2f; }
     .danger:hover { background: #c62828; }
 
-    /* -------------------------------------------------- */
-    /* リスト/アイテム */
-    /* -------------------------------------------------- */
     .list { display: flex; flex-direction: column; gap: 10px; }
-    /* 弁当カードをグリッド表示に */
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-    
-    .list .item, .grid .item {
-      background: #fff; border: 1px solid var(--line); border-radius: 8px; 
-      padding: 12px; transition: border-color 0.2s, box-shadow 0.2s;
-      cursor: pointer;
-    }
-    /* 在庫切れのスタイル */
-    .grid .item.soldout {
-      background: #fdf2f2; /* 薄い赤背景 */
-      border-color: #fca5a5; /* 薄い赤ボーダー */
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-    .grid .item.soldout:hover {
-      border-color: #fca5a5;
-      box-shadow: none;
-    }
 
-    /* 店舗/メニュー選択時のフィードバック */
-    .list .item:hover, .grid .item:not(.soldout):hover { border-color: var(--primary); }
-    .list .item.selected { 
-      border-color: var(--primary); 
-      box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+    .list .item, .grid .item {
+      background: #fff; border: 1px solid var(--line); border-radius: 8px;
+      padding: 12px; transition: border-color 0.2s, box-shadow 0.2s; cursor: pointer;
     }
+    .grid .item.soldout {
+      background: #fdf2f2; border-color: #fca5a5; cursor: not-allowed; opacity: 0.6;
+    }
+    .grid .item.soldout:hover { border-color: #fca5a5; box-shadow: none; }
+
+    .list .item:hover, .grid .item:not(.soldout):hover { border-color: var(--primary); }
+    .list .item.selected { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(74,144,226,0.3); }
 
     .muted { color: var(--muted); font-size: 12px }
     .price { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--primary-dark); }
     .total { font-weight: 700; font-size: 20px; color: var(--fg); }
     .hidden { display: none !important }
     .center { text-align: center }
-    
-    .footer-actions { 
-      position: sticky; bottom: 0; background: var(--card-bg); 
-      border-top: 1px solid var(--line); padding: 12px var(--spacing);
-    }
-    .tag { 
-      display: inline-block; background: #e6f0ff; color: var(--primary-dark);
-      border-radius: 999px; padding: 4px 10px; font-size: 12px; margin-left: 8px;
-    }
-    .spacer{ height: 16px }
-    
-    /* 戻るボタンのサイズ調整 */
-    #btn-back-shop { 
-        width: auto !important; 
-        padding: 8px 12px; 
-        font-size: 14px; 
-        margin: 0; 
-    }
+    .footer-actions { position: sticky; bottom: 0; background: var(--card-bg);
+      border-top: 1px solid var(--line); padding: 12px var(--spacing); }
+    .tag { display: inline-block; background: #e6f0ff; color: var(--primary-dark);
+      border-radius: 999px; padding: 4px 10px; font-size: 12px; margin-left: 8px; }
+    .spacer { height: 16px }
 
-    /* -------------------------------------------------- */
-    /* ローディングオーバーレイ */
-    /* -------------------------------------------------- */
+    /* 戻るボタンのサイズ調整 */
+    #btn-back-shop { width: auto !important; padding: 8px 12px; font-size: 14px; margin: 0; }
+
+    /* ローディング */
     #loading-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-      background: rgba(255, 255, 255, 0.8); z-index: 9999; 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.8); z-index: 9999;
       display: flex; justify-content: center; align-items: center;
       flex-direction: column; font-size: 20px; color: var(--primary-dark);
       font-weight: bold;
@@ -147,11 +91,10 @@
   </style>
 </head>
 <body>
-  
   <header>
     <h1>弁当注文アプリ05-1<span id="app-version" class="tag"></span></h1>
   </header>
-  
+
   <main>
     <section id="view-login" class="card">
       <h2 style="margin-top:0">ログイン</h2>
@@ -219,28 +162,31 @@
   </div>
 
   <script>
-    const APP_VERSION = "v1.5.0"; // 在庫管理バージョンに更新
-    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbwZz8r4wDgypG4F7xDkPy3fKTilpkLCCk6zz1f9euj_9SL1f97Z6UUlxeO7K6tOMIfBWA/exec"; // 👈 ここをデプロイURLに置き換えてください
+    const APP_VERSION = "v1.5.1"; // ← 修正版
+    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbw8PSeqMnaA5tF_n71KMuo9iz6IUnSGpVWhl257q7XzWoZhANzx8EaQs33GvEcszR5wHg/exec"; // ← 最新デプロイURLに置換してください
+
     const $ = s => document.querySelector(s);
     const $$ = s => document.querySelectorAll(s);
     const fmtYen = n => `¥${(n||0).toLocaleString('ja-JP')}`;
-    const fmtDate = iso => { 
-      if(!iso) return ""; const d = new Date(iso);
+    const fmtDate = iso => {
+      if(!iso) return "";
+      const d = new Date(iso);
       const y=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,"0"), dd=String(d.getDate()).padStart(2,"0");
-      const hh=String(d.getHours()).padStart(2,"0"), mi=String(d.getMinutes()).padStart(2,"0"); 
-      return `${y}/${mm}/${dd} ${hh}:${mi}`; 
+      const hh=String(d.getHours()).padStart(2,"0"), mi=String(d.getMinutes()).padStart(2,"0");
+      return `${y}/${mm}/${dd} ${hh}:${mi}`;
     };
-    const store = { set(k,v){localStorage.setItem(k,JSON.stringify(v));}, get(k,def=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}, del(k){localStorage.removeItem(k)} };
+    const store = {
+      set(k,v){localStorage.setItem(k,JSON.stringify(v));},
+      get(k,def=null){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def } catch(e){ return def } },
+      del(k){localStorage.removeItem(k)}
+    };
 
-    /* -------------------------------------------------- */
-    /* API通信 & ローディング制御 */
-    /* -------------------------------------------------- */
     async function api(path, method="GET", body=null){
       showLoading(true);
       const token = store.get("token");
       const url = new URL(ENDPOINT_URL);
       url.searchParams.set("fn", path);
-      
+
       try {
         let res;
         if (method === "GET") {
@@ -248,22 +194,24 @@
           res = await fetch(url.toString(), { method: "GET" });
         } else {
           const form = new URLSearchParams();
-          if (body) for (const [k,v] of Object.entries(body)) form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v));
+          if (body) {
+            for (const [k,v] of Object.entries(body)) {
+              form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v));
+            }
+          }
           if (token) form.append("token", token);
           res = await fetch(url.toString(), { method: "POST", body: form });
         }
-        
+
         if (!res.ok) {
-            // エラーボディをパースして、カスタムエラーメッセージがあれば表示
-            const errorBody = await res.json().catch(() => ({}));
-            const errorMessage = errorBody.error || `HTTP Error ${res.status}`;
-            throw new Error(errorMessage);
+          const errorBody = await res.json().catch(() => ({}));
+          const errorMessage = errorBody.error || `HTTP Error ${res.status}`;
+          throw new Error(errorMessage);
         }
         return await res.json();
-      } catch(e) {
-        // GASからのカスタムエラーメッセージをそのまま alert に渡す
+      } catch (e) {
         alert("通信エラー： " + e.message);
-        throw e; // エラーを再スローして後続処理を中断
+        throw e;
       } finally {
         showLoading(false);
       }
@@ -273,13 +221,9 @@
       $("#loading-overlay").classList.toggle("hidden", !visible);
       $$('input, button, select').forEach(el => el.disabled = visible);
     }
-    
+
     let state = { me:null, shops:[], chosenShop:null, menu:[], cart:[] };
 
-    /* -------------------------------------------------- */
-    /* ビュー制御ロジック */
-    /* -------------------------------------------------- */
-    
     async function doLogin(){
       const id = $("#login-id").value.trim();
       const pass = $("#login-pass").value.trim();
@@ -288,22 +232,20 @@
 
       if(!id){ err.textContent="IDを入力してください"; return; }
       if(!/^\d{4}$/.test(pass)){ err.textContent="パスワードは4桁の数字です"; return; }
-      
+
       try{
         const data = await api("login","POST",{id, password: pass});
-        if(data.ok){ 
-            store.set("token", data.token); 
-            store.set("user", data.user); 
-            state.me = data.user; 
-            
-            $("#welcome-message").textContent = `ようこそ、${state.me.name}さん`;
-            
-            await loadDashboard(); 
-            show("view-shop"); 
+        if(data.ok){
+          store.set("token", data.token);
+          store.set("user", data.user);
+          state.me = data.user;
+          $("#welcome-message").textContent = `ようこそ、${state.me.name}さん`;
+          await loadDashboard();
+          show("view-shop");
+        } else {
+          err.textContent = data.error || "ログインに失敗しました";
         }
-        else { err.textContent = data.error || "ログインに失敗しました"; }
-      }catch(e){ 
-        // api関数内でalert済みのため、ここでは何もしないか、汎用エラー表示
+      } catch(e){
         if (!err.textContent) err.textContent = "ログイン処理中にエラーが発生しました";
       }
     }
@@ -312,22 +254,19 @@
       try {
         const data = await api("dashboard","GET");
         state.shops = data.shops || [];
-        
+
         const cardBox = $("#shop-cards"); cardBox.innerHTML = "";
-        for(const s of state.shops){ 
-          const div = document.createElement("div"); 
+        for(const s of state.shops){
+          const div = document.createElement("div");
           div.className = "item";
           div.innerHTML = `<div class="row-between">
             <h3 style="margin:0">${s.shop_name}</h3>
             <span class="tag">選択</span>
           </div>`;
-          
-          div.dataset.shopId = s.shop_id; 
-          
-          div.onclick = (e) => {
+          div.dataset.shopId = s.shop_id;
+          div.onclick = () => {
             $$('#shop-cards .item').forEach(el => el.classList.remove('selected'));
             div.classList.add('selected');
-
             state.chosenShop = state.shops.find(shop => shop.shop_id === div.dataset.shopId);
             setTimeout(enterMenu, 300);
           };
@@ -343,55 +282,42 @@
           list.appendChild(div);
         }
         $("#btn-logout").onclick = doLogout;
-      } catch(e) {
-        // エラーハンドリングはAPI関数内で行っているため、ここでは無視
-      }
+      } catch(e) {}
     }
 
     async function enterMenu(){
       const shopId = state.chosenShop.shop_id;
       $("#shop-title").textContent = state.chosenShop ? `${state.chosenShop.shop_name}` : "商品を選ぶ";
-      
+
       try {
         const data = await api("menu","GET");
         state.menu = (data.menu||[]).filter(m=>String(m.shop_id)===String(shopId) && String(m.enabled) !== 'FALSE');
-        
         renderMenuCards();
-        state.cart = []; 
-        renderCart(); 
-        
+        state.cart = [];
+        renderCart();
         show("view-menu");
-      } catch(e) {
-        // エラーハンドリングはAPI関数内で行っているため、ここでは無視
-      }
+      } catch(e) {}
     }
 
     function renderMenuCards(){
       const cardBox = $("#menu-cards"); cardBox.innerHTML = "";
-      
       if (state.menu.length === 0) {
         cardBox.innerHTML = '<p class="muted center" style="grid-column: 1 / -1; margin: 0;">現在、販売中の商品はありません。</p>';
         return;
       }
-
       state.menu.forEach(m => {
         const remainingQty = m.remaining_qty || 0;
         const isSoldout = remainingQty <= 0;
-        
         const div = document.createElement("div");
         div.className = "item center" + (isSoldout ? " soldout" : "");
         div.innerHTML = `<h4 style="margin: 0 0 4px 0;">${m.item}</h4>
                          <div class="price" style="margin-bottom: 8px;">${fmtYen(m.price)}</div>
                          <div class="muted" style="font-size: 14px;">残り: ${isSoldout ? 'SOLD OUT' : remainingQty + '個'}</div>`;
-        
-        // 在庫がある場合のみクリック可能
         if (!isSoldout) {
           div.onclick = ()=>{ 
-            // 在庫が減る前にカートに追加
-            state.cart.push({item:m.item, unit_price:Number(m.price)}); 
-            renderCart(); 
-            // 瞬時のフィードバック
-            div.style.backgroundColor = '#f0faff'; 
+            state.cart.push({item:m.item, unit_price:Number(m.price)});
+            renderCart();
+            div.style.backgroundColor = '#f0faff';
             setTimeout(() => div.style.backgroundColor = 'var(--card-bg)', 100);
           };
         }
@@ -414,16 +340,12 @@
         `;
         list.appendChild(div);
       });
-      list.querySelectorAll("button[data-idx]").forEach(b=>{ 
-        b.onclick = (e)=>{ 
-          const i = Number(e.currentTarget.dataset.idx); 
-          state.cart.splice(i,1); 
-          renderCart(); 
-        }; 
+      list.querySelectorAll("button[data-idx]").forEach(b=>{
+        b.onclick = (e)=>{ const i = Number(e.currentTarget.dataset.idx); state.cart.splice(i,1); renderCart(); };
       });
       $("#cart-total").textContent = fmtYen(total);
       $("#cart-count").textContent = `${state.cart.length}点`;
-      
+
       $("#btn-clear").onclick = ()=>{ state.cart = []; renderCart(); };
       $("#btn-order").onclick = doOrder;
       $("#btn-order").disabled = state.cart.length === 0;
@@ -435,12 +357,8 @@
       try{
         const res = await api("order","POST",payload);
         if(res.ok){
-          const itemsMap = res.items.reduce((acc, item) => {
-            acc[item.item] = (acc[item.item] || 0) + 1;
-            return acc;
-          }, {});
+          const itemsMap = res.items.reduce((acc, item) => { acc[item.item] = (acc[item.item] || 0) + 1; return acc; }, {});
           const itemLines = Object.entries(itemsMap).map(([item, count]) => `・${item} × ${count}点`);
-
           $("#done-summary").innerHTML = `
             <strong>日時:</strong> ${fmtDate(res.timestamp)}<br>
             <strong>店舗:</strong> ${res.shop_name}<br>
@@ -452,52 +370,51 @@
           `;
           show("view-done");
         }
-      }catch(e){ 
-        // 注文失敗時に、メニューを再ロードして最新の在庫状況を反映
-        await enterMenu(); 
+      } catch(e){
+        await enterMenu(); // 在庫変動を反映
       }
     }
 
-    function doLogout(){ 
-      store.del("token"); 
+    function doLogout(){
+      store.del("token");
       store.del("user");
-      state = {me:null, shops:[], chosenShop:null, menu:[], cart:[]}; 
-      $("#login-id").value=""; 
-      $("#login-pass").value=""; 
-      show("view-login"); 
-    }
-    
-    function show(id){ 
-      for(const sec of $$("main > section")) sec.classList.add("hidden"); 
-      document.getElementById(id).classList.remove("hidden"); 
+      state = {me:null, shops:[], chosenShop:null, menu:[], cart:[]};
+      $("#login-id").value="";
+      $("#login-pass").value="";
+      show("view-login");
     }
 
-    // 初期化とイベント設定
+    function show(id){
+      for(const sec of $$("main > section")) sec.classList.add("hidden");
+      document.getElementById(id).classList.remove("hidden");
+    }
+
+    // 初期化
     $("#app-version").textContent = APP_VERSION;
-    $("#btn-login").onclick = doLogin; 
-    $("#btn-back-shop").onclick = ()=> show("view-shop"); 
+    $("#btn-login").onclick = doLogin;
+    $("#btn-back-shop").onclick = ()=> show("view-shop");
     $("#btn-finish").onclick = doLogout;
 
-    (async ()=>{ 
-      const token = store.get("token"); 
-      if(token){ 
-        try{ 
+    (async ()=>{
+      const token = store.get("token");
+      if(token){
+        try{
           showLoading(true);
-          const user = store.get("user"); 
+          const user = store.get("user");
           state.me = user;
           if (state.me && state.me.name) {
-             $("#welcome-message").textContent = `ようこそ、${state.me.name}さん`;
+            $("#welcome-message").textContent = `ようこそ、${state.me.name}さん`;
           }
-          await loadDashboard(); 
-          show("view-shop"); 
-        }catch(e){ 
-          doLogout(); 
+          await loadDashboard();
+          show("view-shop");
+        } catch(e){
+          doLogout();
         } finally {
           showLoading(false);
         }
-      } else { 
-        show("view-login"); 
-      } 
+      } else {
+        show("view-login");
+      }
     })();
   </script>
 </body>
