@@ -171,7 +171,7 @@
 
   <script>
     const APP_VERSION="v2.0.0";
-    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbyUwFFUVHlXG-EixCvhKrdWe_mMdMSL-digj-motgxr0rkDQbX9MspWpRE2KhpFLNHZaA/exec"; // ← あなたのGASデプロイURL
+    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycby_9fgQz0rbsNW-T7Kq1C2EoresMX5c_iiB5UJ78JWue1Iyrw7NGH7lgAcsUU_ACbu6Hg/exec"; // ← あなたのGASデプロイURL
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
     const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`};
