@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <title>出商お弁当注文アプリ</title>
   <style>
-    :root { 
+    :root {
       --primary:#4a90e2; --primary-dark:#3a79c9;
       --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666;
       --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05);
@@ -72,7 +72,7 @@
       <p id="login-error" class="muted center"></p>
     </section>
 
-    <!-- 生徒UI -->
+    <!-- 生徒側 -->
     <section id="view-shop" class="hidden">
       <h3 id="welcome-message" style="margin-top:0;font-weight:normal"></h3>
       <div class="card">
@@ -122,17 +122,17 @@
     <!-- 店側 -->
     <section id="view-vendor" class="hidden">
       <div class="card">
-        <h2 style="margin:0" id="vendor-title">本日の受注状況</h2>
-        <p class="muted" id="vendor-sub" style="margin:6px 0 0 0">当日分のみ表示（8:45以降は固定、14:00でリセット）</p>
+        <h2 id="vendor-title" style="margin:0">受注状況</h2>
+        <p class="muted" id="vendor-sub" style="margin:6px 0 0 0">—</p>
       </div>
 
       <div class="card vendor-kpi">
         <div class="item center" style="cursor:default">
-          <div class="muted">本日の総点数</div>
+          <div class="muted">総点数</div>
           <div style="font-size:28px;font-weight:900" id="kpi-qty">0</div>
         </div>
         <div class="item center" style="cursor:default">
-          <div class="muted">本日の総金額</div>
+          <div class="muted">総金額</div>
           <div style="font-size:28px;font-weight:900" id="kpi-amount">¥0</div>
         </div>
       </div>
@@ -145,7 +145,7 @@
             <tbody id="vendor-byitem"></tbody>
           </table>
         </div>
-        <p class="muted" id="vendor-byitem-empty" style="margin:8px 0 0 0;display:none">本日分はまだ注文がありません。</p>
+        <p class="muted" id="vendor-byitem-empty" style="margin:8px 0 0 0;display:none">注文がありません。</p>
       </div>
 
       <div class="card">
@@ -156,7 +156,7 @@
             <tbody id="vendor-rows"></tbody>
           </table>
         </div>
-        <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">本日分はまだ注文がありません。</p>
+        <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">注文がありません。</p>
       </div>
 
       <!-- 定休日設定 -->
@@ -181,65 +181,65 @@
   <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
   <script>
-    const APP_VERSION="v1.8.3-fix";
-    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxZduVPY0XDjrdjozTefg4S-87n5TTgyt5bUMyL4PETIhgDUVYhGSqx9NlRqR-Uhk5g1A/exec"; // ← デプロイURLに置換
+    const APP_VERSION="v1.9.0";
+    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxZduVPY0XDjrdjozTefg4S-87n5TTgyt5bUMyL4PETIhgDUVYhGSqx9NlRqR-Uhk5g1A/exec"; // ← あなたのGASデプロイURLに置換
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
-    const fmtDate=iso=>{ if(!iso) return ""; const d=new Date(iso); const y=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"); const hh=String(d.getHours()).padStart(2,"0"),mi=String(d.getMinutes()).padStart(2,"0"); return `${y}/${mm}/${dd} ${hh}:${mi}`; };
-    const store={ set(k,v){localStorage.setItem(k,JSON.stringify(v))}, get(k,def=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}, del(k){localStorage.removeItem(k)} };
-
-    function show(id){ for(const sec of $$("main > section")) sec.classList.add("hidden"); document.getElementById(id).classList.remove("hidden"); }
-    function showLoading(v){ $("#loading-overlay").classList.toggle("hidden",!v); $$("input,button,select").forEach(el=> el.disabled=v); }
-
-    async function api(fn,method="GET",payload=null){
+    const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`};
+    const store={set(k,v){localStorage.setItem(k,JSON.stringify(v))},get(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},del(k){localStorage.removeItem(k)}};
+    function show(id){$$("main>section").forEach(s=>s.classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
+    function showLoading(v){$("#loading-overlay").classList.toggle("hidden",!v);$$("input,button,select").forEach(e=>e.disabled=v)}
+    async function api(fn,method="GET",body=null){
       showLoading(true);
-      const token=store.get("token"); const url=new URL(ENDPOINT_URL); url.searchParams.set("fn",fn);
+      const token=store.get("token");
+      const u=new URL(ENDPOINT_URL);u.searchParams.set("fn",fn);
       try{
-        let res;
-        if(method==="GET"){ if(token) url.searchParams.set("token",token); res=await fetch(url.toString()); }
-        else{ const form=new URLSearchParams(); if(payload) for(const[k,v] of Object.entries(payload)) form.append(k, typeof v==="object"?JSON.stringify(v):String(v)); if(token) form.append("token",token); res=await fetch(url.toString(),{method:"POST", body:form}); }
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+        let r;
+        if(method==="GET"){ if(token)u.searchParams.set("token",token); r=await fetch(u); }
+        else{
+          const f=new URLSearchParams();
+          if(body) for(const[k,v] of Object.entries(body)) f.append(k, typeof v==="object"?JSON.stringify(v):String(v));
+          if(token) f.append("token",token);
+          r=await fetch(u,{method:"POST",body:f});
+        }
+        if(!r.ok) throw new Error(r.status);
+        return await r.json();
       } finally { showLoading(false); }
     }
 
     let state={ me:null, shops:[], chosenShop:null, menu:[], cart:[] };
 
+    /* ---------- ログイン ---------- */
     async function doLogin(){
       const id=$("#login-id").value.trim(), pass=$("#login-pass").value.trim(), err=$("#login-error");
       err.textContent="";
-      if(!id){ err.textContent="IDを入力してください"; return; }
-      if(!/^\d{4}$/.test(pass)){ err.textContent="パスワードは4桁の数字です"; return; }
-
+      if(!id){err.textContent="IDを入力してください";return}
+      if(!/^\d{4}$/.test(pass)){err.textContent="パスワードは4桁の数字です";return}
       try{
-        const data=await api("login","POST",{id,password:pass});
-        if(!data.ok){ err.textContent=data.error||"ログインに失敗しました"; return; }
-        store.set("token",data.token); store.set("user",data.user); state.me=data.user;
-
-        if(/^s\d+$/i.test(state.me.id)){ // 店ログイン
-          $("#vendor-title").textContent=`本日の受注状況（${state.me.id.toUpperCase()}）`;
-          await loadVendorSummary(); show("view-vendor"); return;
-        }
-        $("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;
-        await loadDashboard(); show("view-shop");
-      }catch(e){ err.textContent="通信エラー："+e.message; }
+        const d=await api("login","POST",{id,password:pass});
+        if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
+        store.set("token",d.token);store.set("user",d.user);
+        state.me=d.user;
+        if(/^s\d+/i.test(state.me.id)){await loadVendorSummary();show("view-vendor")}
+        else{$("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;await loadDashboard();show("view-shop")}
+      }catch(e){err.textContent="通信エラー："+e.message}
     }
 
+    /* ---------- 生徒側 ---------- */
     async function loadDashboard(){
-      const d=await api("dashboard","GET"); state.shops=d.shops||[];
-      const box=$("#shop-cards"); box.innerHTML="";
+      const d=await api("dashboard","GET");state.shops=d.shops||[];
+      const box=$("#shop-cards");box.innerHTML="";
       for(const s of state.shops){
-        const div=document.createElement("div"); div.className="item";
+        const div=document.createElement("div");div.className="item";
         div.innerHTML=`<div class="row-between"><h3 style="margin:0">${s.shop_name}</h3><span class="tag">選択</span></div>`;
-        div.dataset.shopId=s.shop_id;
-        div.onclick=()=>{ $$('#shop-cards .item').forEach(el=>el.classList.remove('selected')); div.classList.add('selected'); state.chosenShop=s; setTimeout(enterMenu,200); };
+        div.onclick=()=>{state.chosenShop=s;enterMenu()};
         box.appendChild(div);
       }
-      const list=$("#history-list"); list.innerHTML="";
+      const list=$("#history-list");list.innerHTML="";
       for(const h of (d.history||[])){
-        const div=document.createElement("div"); div.className="item"; div.style.cursor="default";
-        div.innerHTML=`<div class="row-between"><h4 style="margin:0">${h.shop_name||""}</h4><div class="muted">${fmtDate(h.timestamp)}</div></div>
-          <div class="muted" style="margin-top:5px">${h.items.map(i=>`${i.item}（${fmtYen(i.unit_price)}）`).join("、")}</div>
+        const div=document.createElement("div");div.className="item";
+        div.innerHTML=`<div class="row-between"><h4>${h.shop_name}</h4><div class="muted">${fmtDate(h.timestamp)}</div></div>
+          <div class="muted">${h.items.map(i=>`${i.item}（${fmtYen(i.unit_price)}）`).join("、")}</div>
           <div class="row-between" style="border-top:1px dashed var(--line);margin-top:8px;padding-top:8px"><span>合計</span><span class="price">${fmtYen(h.total)}</span></div>`;
         list.appendChild(div);
       }
@@ -249,41 +249,37 @@
     async function enterMenu(){
       const sid=state.chosenShop.shop_id;
       $("#shop-title").textContent=state.chosenShop.shop_name;
-      const data=await api("menu","GET");
-      state.menu=(data.menu||[]).filter(m=>String(m.shop_id)===String(sid)&&String(m.enabled)!=='FALSE');
+      const d=await api("menu","GET");
+      state.menu=(d.menu||[]).filter(m=>String(m.shop_id)===String(sid)&&String(m.enabled)!=='FALSE');
       renderMenu(); state.cart=[]; renderCart(); show("view-menu");
     }
-
     function renderMenu(){
-      const box=$("#menu-cards"); box.innerHTML="";
-      if(!state.menu.length){
-        box.innerHTML='<p class="muted center" style="grid-column:1/-1;margin:0">現在、販売中の商品はありません。</p>';
-        return;
-      }
+      const box=$("#menu-cards");box.innerHTML="";
+      if(!state.menu.length){box.innerHTML='<p class="muted center" style="grid-column:1/-1">販売中の商品はありません。</p>';return}
       for(const m of state.menu){
-        const div=document.createElement("div"); div.className="item center";
-        div.innerHTML=`<h4 style="margin:0 0 8px 0">${m.item}</h4><div class="price">${fmtYen(m.price)}</div>`;
-        div.onclick=()=>{ state.cart.push({item:m.item, unit_price:Number(m.price)}); renderCart(); div.style.backgroundColor='#f0faff'; setTimeout(()=>div.style.backgroundColor='var(--card-bg)',120); };
+        const div=document.createElement("div");div.className="item center";
+        div.innerHTML=`<h4>${m.item}</h4><div class="price">${fmtYen(m.price)}</div>`;
+        div.onclick=()=>{state.cart.push({item:m.item,unit_price:Number(m.price)});renderCart()};
         box.appendChild(div);
       }
     }
-
     function renderCart(){
-      const list=$("#cart-list"); list.innerHTML=""; let total=0;
-      state.cart.forEach((c,i)=>{ total+=c.unit_price;
-        const div=document.createElement("div"); div.className="item row-between"; div.style.cursor="default";
+      const list=$("#cart-list");list.innerHTML="";let total=0;
+      state.cart.forEach((c,i)=>{
+        total+=c.unit_price;
+        const div=document.createElement("div");div.className="item row-between";div.style.cursor="default";
         div.innerHTML=`<div>${c.item}</div><div class="row" style="gap:6px"><span class="price">${fmtYen(c.unit_price)}</span><button class="ghost" style="width:auto;padding:6px 10px;margin:0" data-i="${i}">削除</button></div>`;
         list.appendChild(div);
       });
       list.querySelectorAll("button[data-i]").forEach(b=> b.onclick=(e)=>{ const i=Number(e.currentTarget.dataset.i); state.cart.splice(i,1); renderCart(); });
-      $("#cart-total").textContent=fmtYen(total); $("#cart-count").textContent=`${state.cart.length}点`;
-      $("#btn-clear").onclick=()=>{ state.cart=[]; renderCart(); };
+      $("#cart-total").textContent=fmtYen(total);
+      $("#cart-count").textContent=`${state.cart.length}点`;
+      $("#btn-clear").onclick=()=>{state.cart=[];renderCart()};
       $("#btn-order").onclick=doOrder;
     }
-
     async function doOrder(){
-      if(!state.cart.length){ alert("商品を追加してください"); return; }
-      const payload={shop_id:state.chosenShop.shop_id, items:state.cart};
+      if(!state.cart.length){alert("商品を追加してください");return}
+      const payload={shop_id:state.chosenShop.shop_id,items:state.cart};
       try{
         const res=await api("order","POST",payload);
         if(res.ok){
@@ -291,13 +287,11 @@
           const lines=Object.entries(counts).map(([name,c])=>`・${name} × ${c}点`).join("<br>");
           $("#done-summary").innerHTML=`<strong>日時:</strong> ${fmtDate(res.timestamp)}<br><strong>店舗:</strong> ${res.shop_name}<br><strong>合計金額:</strong> <span class="price total">${fmtYen(res.total)}</span><br><div style="margin-top:10px"><strong>注文内容:</strong><br>${lines}</div>`;
           show("view-done");
-        }else{
-          alert(res.error||"注文に失敗しました");
-        }
+        }else{ alert(res.error||"注文に失敗しました"); }
       }catch(e){ alert("通信エラー："+e.message); }
     }
 
-    // ====== 店側：定休日カレンダー ======
+    /* ---------- 店側：定休日カレンダー ---------- */
     const ClosedDays = {
       selected: new Set(), // 'YYYY-MM-DD'
       monthKeys: [],
@@ -391,37 +385,48 @@
       async save(){
         const body = { dates: Array.from(this.selected).sort() };
         const res = await api('save_closed_days','POST', body);
-        if (res.ok){
-          $('#closed-msg').textContent = '保存しました（当月＋翌月を上書き）。';
-        }else{
-          $('#closed-msg').textContent = res.error || '保存に失敗しました';
-        }
+        $('#closed-msg').textContent = res.ok ? '保存しました（当月＋翌月を上書き）。' : (res.error || '保存に失敗しました');
       }
     };
 
-    // --- ベンダービュー読み込み ---
+    /* ---------- 店側：提供日ベース集計の読込 ---------- */
     async function loadVendorSummary(){
-      const d=await api("vendor_summary","GET");
-      $("#vendor-sub").textContent = d.range_label || '当日分のみ表示（8:45以降は固定、14:00でリセット）';
+      const d = await api("vendor_summary","GET");
 
-      $("#kpi-qty").textContent=String(d.total_qty||0);
-      $("#kpi-amount").textContent=fmtYen(d.total_amount||0);
+      // 見出しとサブテキストをサーバ側の判定に合わせて自動切替
+      const uid = (store.get('user')||{}).id?.toUpperCase() || '';
+      $("#vendor-title").textContent = `${d.title_label || '受注状況'}（${uid}）`;
+      $("#vendor-sub").textContent   = d.sub_label || '—';
+
+      $("#kpi-qty").textContent = String(d.total_qty || 0);
+      $("#kpi-amount").textContent = fmtYen(d.total_amount || 0);
 
       const by=$("#vendor-byitem"); by.innerHTML="";
-      if(!(d.by_item||[]).length){ $("#vendor-byitem-empty").style.display='block'; } else {
+      if(!(d.by_item||[]).length){ $("#vendor-byitem-empty").style.display='block'; }
+      else{
         $("#vendor-byitem-empty").style.display='none';
-        for(const r of d.by_item){ const tr=document.createElement("tr"); tr.innerHTML=`<td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`; by.appendChild(tr); }
+        for(const r of d.by_item){
+          const tr=document.createElement("tr");
+          tr.innerHTML=`<td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`;
+          by.appendChild(tr);
+        }
       }
 
       const rows=$("#vendor-rows"); rows.innerHTML="";
-      if(!(d.rows||[]).length){ $("#vendor-rows-empty").style.display='block'; } else {
+      if(!(d.rows||[]).length){ $("#vendor-rows-empty").style.display='block'; }
+      else{
         $("#vendor-rows-empty").style.display='none';
-        for(const r of d.rows){ const tr=document.createElement("tr"); tr.innerHTML=`<td>${r.user_id}</td><td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`; rows.appendChild(tr); }
+        for(const r of d.rows){
+          const tr=document.createElement("tr");
+          tr.innerHTML=`<td>${r.user_id}</td><td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`;
+          rows.appendChild(tr);
+        }
       }
 
       await ClosedDays.load();
     }
 
+    /* ---------- 共通操作 ---------- */
     function doLogout(){
       store.del("token"); store.del("user");
       state={me:null, shops:[], chosenShop:null, menu:[], cart:[]};
@@ -446,7 +451,6 @@
       if(token&&user){
         state.me=user;
         if(/^s\d+$/i.test(user.id)){
-          $("#vendor-title").textContent=`本日の受注状況（${user.id.toUpperCase()}）`;
           await loadVendorSummary(); show("view-vendor");
         }else{
           $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
