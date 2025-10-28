@@ -44,6 +44,11 @@
     .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
     @media (max-width:640px){ .cal-grid {grid-template-columns:1fr;} .vendor-kpi {grid-template-columns:1fr;}
       .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;} .table-wrap table{min-width:520px;} }
+
+    /* 未確定/確定 表示（履歴カードの枠だけ変更） */
+    .order-card{border-width:2px;}
+    .order-pending{border-color:#3b82f6;}  /* 青 */
+    .order-confirmed{border-color:#ef4444;}/* 赤 */
   </style>
 </head>
 <body>
@@ -70,7 +75,7 @@
         <div id="shop-cards" class="list"></div>
       </div>
       <div class="card">
-        <h3 style="margin-top:0">最近の注文（最新10件）</h3>
+        <h3 style="margin-top:0">最近の注文（最新20件）</h3>
         <div id="history-list" class="list"></div>
       </div>
       <div class="footer-actions row"><button class="ghost" id="btn-logout">ログアウト</button></div>
@@ -165,8 +170,8 @@
   <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
   <script>
-    const APP_VERSION="v1.9.1";
-    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycby_MbfJDZwkWLhNKUNNG8VyOrrtjGZSBYVsnnZgMHOJFnBRYKMf6j7z7vjxGd5M3_gCEA/exec"; // ← あなたのGASデプロイURL
+    const APP_VERSION="v2.0.0";
+    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbyUwFFUVHlXG-EixCvhKrdWe_mMdMSL-digj-motgxr0rkDQbX9MspWpRE2KhpFLNHZaA/exec"; // ← あなたのGASデプロイURL
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
     const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`};
@@ -212,6 +217,7 @@
     /* ---------- 生徒側 ---------- */
     async function loadDashboard(){
       const d=await api("dashboard","GET");state.shops=d.shops||[];
+      // 店リスト
       const box=$("#shop-cards");box.innerHTML="";
       for(const s of state.shops){
         const div=document.createElement("div");div.className="item";
@@ -219,14 +225,46 @@
         div.onclick=()=>{state.chosenShop=s;enterMenu()};
         box.appendChild(div);
       }
+      // 履歴（取消済みはサーバで除外済み／未確定のみ取消可）
       const list=$("#history-list");list.innerHTML="";
       for(const h of (d.history||[])){
-        const div=document.createElement("div");div.className="item";
-        div.innerHTML=`<div class="row-between"><h4>${h.shop_name}</h4><div class="muted">${fmtDate(h.timestamp)}</div></div>
-          <div class="muted">${h.items.map(i=>`${i.item}（${fmtYen(i.unit_price)}）`).join("、")}</div>
-          <div class="row-between" style="border-top:1px dashed var(--line);margin-top:8px;padding-top:8px"><span>合計</span><span class="price">${fmtYen(h.total)}</span></div>`;
-        list.appendChild(div);
+        const card=document.createElement("div");
+        card.className = `item order-card ${h.cancellable ? 'order-pending' : 'order-confirmed'}`;
+        const itemsText = h.items.map(i=>`${i.item}（${fmtYen(i.unit_price)}）`).join("、");
+        card.innerHTML = `
+          <div class="row-between">
+            <h4 style="margin:0">${h.shop_name}</h4>
+            <div class="muted">${fmtDate(h.timestamp)}</div>
+          </div>
+          <div class="muted" style="margin-top: 5px;">${itemsText}</div>
+          <div class="row-between" style="border-top:1px dashed var(--line); margin-top:8px; padding-top:8px;">
+            <span>合計</span>
+            <div>
+              <span class="price" style="margin-right:8px">${fmtYen(h.total)}</span>
+              ${h.cancellable ? '<button class="ghost btn-cancel" style="width:auto;padding:6px 10px;margin:0">取消</button>' : ''}
+            </div>
+          </div>
+        `;
+        // 取消ボタン
+        const btn = card.querySelector('.btn-cancel');
+        if(btn){
+          btn.onclick = async ()=>{
+            if(!confirm('この注文を取り消します。よろしいですか？')) return;
+            try{
+              const res = await api('cancel_order','POST',{order_id: h.order_id});
+              if(res.ok){
+                card.remove(); // 一覧から削除
+              }else{
+                alert(res.error || '取消に失敗しました');
+              }
+            }catch(e){
+              alert('通信エラー：'+e.message);
+            }
+          };
+        }
+        list.appendChild(card);
       }
+
       $("#btn-logout").onclick=doLogout;
     }
 
@@ -243,7 +281,7 @@
       for(const m of state.menu){
         const div=document.createElement("div");div.className="item center";
         div.innerHTML=`<h4>${m.item}</h4><div class="price">${fmtYen(m.price)}</div>`;
-        div.onclick=()=>{ // ★ item_id も積む（UI変わらず）
+        div.onclick=()=>{ // item_id も送る（UI変更なし）
           state.cart.push({ item_id:String(m.item_id||''), item:m.item, unit_price:Number(m.price) });
           renderCart();
         };
