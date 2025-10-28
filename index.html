@@ -181,8 +181,8 @@
   <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
   <script>
-    const APP_VERSION="v1.8.1";
-    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxwseegB4-UZCo3qcSzPzIh-uMkPdNalXCrifDAPFMW1Qm97KoB7Kp9sM7qejmfjem59Q/exec"; // ← GASデプロイURLに変更
+    const APP_VERSION="v1.8.3-fix";
+    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxwseegB4-UZCo3qcSzPzIh-uMkPdNalXCrifDAPFMW1Qm97KoB7Kp9sM7qejmfjem59Q/exec"; // ← デプロイURLに置換
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
     const fmtDate=iso=>{ if(!iso) return ""; const d=new Date(iso); const y=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"); const hh=String(d.getHours()).padStart(2,"0"),mi=String(d.getMinutes()).padStart(2,"0"); return `${y}/${mm}/${dd} ${hh}:${mi}`; };
