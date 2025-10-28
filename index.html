@@ -148,8 +148,8 @@
   <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
   <script>
-    const APP_VERSION="v1.7.1";
-    const ENDPOINT_URL="REPLACE_WITH_YOUR_DEPLOY_URL"; // ← 最新のGASデプロイURLに差し替え
+    const APP_VERSION="v2.0.0";
+    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxOiyxNhNPuwJ-mZNCjJydp85PAHpHf_88cn6fykFxcmWTyf2HmqxdFwdmTu1bfYO2KGw/exec"; // ← 最新のGASデプロイURLに差し替え
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
     const fmtDate=iso=>{ if(!iso) return ""; const d=new Date(iso); const y=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"); const hh=String(d.getHours()).padStart(2,"0"),mi=String(d.getMinutes()).padStart(2,"0"); return `${y}/${mm}/${dd} ${hh}:${mi}`; };
