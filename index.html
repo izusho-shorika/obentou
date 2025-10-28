@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-  <title>出商お弁当注文アプリ</title>
+  <title>出商お弁当注文アプリ02</title>
   <style>
     :root { --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666; --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05); --radius:10px; --spacing:16px; }
     *{box-sizing:border-box}
@@ -136,7 +136,7 @@
           <thead><tr><th style="width:120px">ユーザーID</th><th>品目</th><th style="width:70px">数量</th><th style="width:120px">金額</th></tr></thead>
           <tbody id="vendor-rows"></tbody>
         </table>
-        <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">まだ注文がありません。</p>
+        <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">本日分はまだ注文がありません。</p>
       </div>
       <div class="footer-actions row">
         <button class="ghost" id="btn-vendor-refresh">更新</button>
@@ -148,8 +148,8 @@
   <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
   <script>
-    const APP_VERSION="v1.7.2";
-    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbyDgbDeZLRu-nULUoT45i2KG3Trn7M3_w0PCB_0rTCY60vdH8uOp43nfaOoHa4qJDvl/exec"; // ← 最新デプロイURLに差し替え
+    const APP_VERSION="v1.7.1";
+    const ENDPOINT_URL="REPLACE_WITH_YOUR_DEPLOY_URL"; // ← 最新のGASデプロイURLに差し替え
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
     const fmtDate=iso=>{ if(!iso) return ""; const d=new Date(iso); const y=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"); const hh=String(d.getHours()).padStart(2,"0"),mi=String(d.getMinutes()).padStart(2,"0"); return `${y}/${mm}/${dd} ${hh}:${mi}`; };
@@ -181,7 +181,7 @@
         if(!data.ok){ err.textContent=data.error||"ログインに失敗しました"; return; }
         store.set("token", data.token); store.set("user", data.user); state.me=data.user;
 
-        // ▼ 店ログイン（s01/s02）はベンダービューへ
+        // 店ログイン（s01/s02など）→ ベンダービュー
         if(/^s\d+$/i.test(state.me.id)){
           $("#vendor-title").textContent=`本日の受注状況（${state.me.id.toUpperCase()}）`;
           await loadVendorSummary();
@@ -189,7 +189,7 @@
           return;
         }
 
-        // ▼ 生徒向けは従来どおり
+        // 生徒向けは従来どおり
         $("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;
         await loadDashboard();
         show("view-shop");
@@ -263,6 +263,10 @@
     // --- Vendor view ---
     async function loadVendorSummary(){
       const d=await api("vendor_summary","GET");
+
+      // サブテキストに集計窓を表示（8:40前は「前日16:00〜現在」、以降は「前日16:00〜当日08:40」）
+      $("#vendor-sub").textContent = d.range_label || '当日分のみ表示（8:45以降は固定、14:00でリセット）';
+
       $("#kpi-qty").textContent=String(d.total_qty||0);
       $("#kpi-amount").textContent=fmtYen(d.total_amount||0);
 
