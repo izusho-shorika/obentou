@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <title>出商お弁当注文アプリ</title>
   <style>
-    :root { --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666; --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05); --radius:10px; --spacing:16px; }
+    :root { 
+      --primary:#4a90e2; --primary-dark:#3a79c9;
+      --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666;
+      --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05);
+      --radius:10px; --spacing:16px;
+    }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--fg);font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
     header{position:sticky;top:0;background:var(--card-bg);border-bottom:1px solid var(--line);padding:12px var(--spacing);z-index:10}
@@ -21,8 +26,7 @@
     button:active{background:var(--primary-dark);transform:scale(.99)}
     button.ghost{background:#f1f5f9;color:var(--fg);border:1px solid var(--line)}
     button.ghost:hover{background:#e2e8f0}
-    .danger{background:#d32f2f}
-    .danger:hover{background:#c62828}
+    .danger{background:#d32f2f}.danger:hover{background:#c62828}
     .list{display:flex;flex-direction:column;gap:10px}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
     .list .item,.grid .item{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;transition:border-color .2s,box-shadow .2s;cursor:pointer}
@@ -40,12 +44,20 @@
     #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:9999;display:flex;justify-content:center;align-items:center;flex-direction:column;font-size:20px;color:var(--primary-dark);font-weight:bold}
     .spinner{border:4px solid #f3f3f3;border-top:4px solid var(--primary);border-radius:50%;width:40px;height:40px;margin-bottom:10px;animation:spin 1s linear infinite}
     @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+
+    /* --- 店側UI レスポンシブ強化 --- */
+    .cal-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    @media (max-width:640px){
+      .cal-grid {grid-template-columns:1fr;}
+      .vendor-kpi {grid-template-columns:1fr;}
+      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+      .table-wrap table{min-width:520px;}
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>出商お弁当注文アプリ<span id="app-version" class="tag"></span></h1>
-  </header>
+  <header><h1>出商お弁当注文アプリ<span id="app-version" class="tag"></span></h1></header>
 
   <main>
     <!-- ログイン画面 -->
@@ -60,7 +72,7 @@
       <p id="login-error" class="muted center"></p>
     </section>
 
-    <!-- 生徒UI（従来通り） -->
+    <!-- 生徒UI -->
     <section id="view-shop" class="hidden">
       <h3 id="welcome-message" style="margin-top:0;font-weight:normal"></h3>
       <div class="card">
@@ -98,7 +110,7 @@
       </div>
     </section>
 
-    <!-- 注文完了画面 -->
+    <!-- 注文完了 -->
     <section id="view-done" class="hidden card center">
       <h2>🎉 注文を確定しました</h2>
       <div class="spacer"></div>
@@ -107,38 +119,51 @@
       <button id="btn-finish" class="danger">終了（ログアウトして戻る）</button>
     </section>
 
-    <!-- ★ 店側UI：定休日設定付き -->
+    <!-- 店側 -->
     <section id="view-vendor" class="hidden">
       <div class="card">
         <h2 style="margin:0" id="vendor-title">本日の受注状況</h2>
         <p class="muted" id="vendor-sub" style="margin:6px 0 0 0">当日分のみ表示（8:45以降は固定、14:00でリセット）</p>
       </div>
-      <div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="item center" style="cursor:default"><div class="muted">本日の総点数</div><div style="font-size:28px;font-weight:900" id="kpi-qty">0</div></div>
-        <div class="item center" style="cursor:default"><div class="muted">本日の総金額</div><div style="font-size:28px;font-weight:900" id="kpi-amount">¥0</div></div>
+
+      <div class="card vendor-kpi">
+        <div class="item center" style="cursor:default">
+          <div class="muted">本日の総点数</div>
+          <div style="font-size:28px;font-weight:900" id="kpi-qty">0</div>
+        </div>
+        <div class="item center" style="cursor:default">
+          <div class="muted">本日の総金額</div>
+          <div style="font-size:28px;font-weight:900" id="kpi-amount">¥0</div>
+        </div>
       </div>
+
       <div class="card">
         <h3 style="margin:0">品目別集計</h3>
-        <table style="width:100%;border-collapse:collapse;margin-top:8px">
-          <thead><tr><th>品目</th><th style="width:90px">数量</th><th style="width:120px">金額</th></tr></thead>
-          <tbody id="vendor-byitem"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table style="width:100%;border-collapse:collapse;margin-top:8px">
+            <thead><tr><th>品目</th><th style="width:90px">数量</th><th style="width:120px">金額</th></tr></thead>
+            <tbody id="vendor-byitem"></tbody>
+          </table>
+        </div>
         <p class="muted" id="vendor-byitem-empty" style="margin:8px 0 0 0;display:none">本日分はまだ注文がありません。</p>
       </div>
+
       <div class="card">
         <h3 style="margin:0">注文詳細</h3>
-        <table style="width:100%;border-collapse:collapse;margin-top:8px">
-          <thead><tr><th style="width:120px">ユーザーID</th><th>品目</th><th style="width:70px">数量</th><th style="width:120px">金額</th></tr></thead>
-        <tbody id="vendor-rows"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table style="width:100%;border-collapse:collapse;margin-top:8px">
+            <thead><tr><th style="width:120px">ユーザーID</th><th>品目</th><th style="width:70px">数量</th><th style="width:120px">金額</th></tr></thead>
+            <tbody id="vendor-rows"></tbody>
+          </table>
+        </div>
         <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">本日分はまだ注文がありません。</p>
       </div>
 
-      <!-- ★ 追加：定休日設定 -->
+      <!-- 定休日設定 -->
       <div class="card">
         <h3 style="margin:0">定休日の設定</h3>
         <p class="muted" style="margin:6px 0 12px 0">当月と翌月の休業日を選択し、「保存」で反映します（丸ごと上書き）。</p>
-        <div id="calendars" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+        <div id="calendars" class="cal-grid"></div>
         <div class="row" style="margin-top:12px">
           <button class="ghost" id="btn-closed-refresh" style="width:auto">再読込</button>
           <button id="btn-closed-save" style="width:auto">保存</button>
