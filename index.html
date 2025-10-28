@@ -170,8 +170,8 @@
   <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
   <script>
-    const APP_VERSION="v2.0.2";
-    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxCmVlkwtUGGDrOo6--0iXLneYJYFMmEBvMvYtGFqYtjLQTyLm3SyqbgSZFUS-7VDnBNQ/exec"; // ← あなたのGASデプロイURL
+    const APP_VERSION="v2.0.3";
+    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbztziHtw64JFDhBbagnQYGk5TMiEzrDTpPNMvPLuXERF0bWtvfMTONIlQXrXnD9XC16Yg/exec"; // ← あなたのGASデプロイURL
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
     const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`};
