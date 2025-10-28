@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-  <title>出商お弁当注文アプリ02</title>
+  <title>出商お弁当注文アプリ</title>
   <style>
     :root { --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666; --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05); --radius:10px; --spacing:16px; }
     *{box-sizing:border-box}
@@ -48,7 +48,7 @@
   </header>
 
   <main>
-    <!-- 生徒向けUI（既存と同じ） -->
+    <!-- ログイン画面 -->
     <section id="view-login" class="card">
       <h2 style="margin-top:0">ログイン</h2>
       <div style="padding-top:10px">
@@ -60,6 +60,7 @@
       <p id="login-error" class="muted center"></p>
     </section>
 
+    <!-- 生徒UI（従来通り） -->
     <section id="view-shop" class="hidden">
       <h3 id="welcome-message" style="margin-top:0;font-weight:normal"></h3>
       <div class="card">
@@ -73,6 +74,7 @@
       <div class="footer-actions row"><button class="ghost" id="btn-logout">ログアウト</button></div>
     </section>
 
+    <!-- メニュー画面 -->
     <section id="view-menu" class="hidden">
       <div class="card">
         <div class="row-between">
@@ -80,9 +82,7 @@
           <button class="ghost" id="btn-back-shop">← 戻る</button>
         </div>
         <div style="margin:16px 0">
-          <div id="menu-cards" class="grid">
-            <p class="muted center" style="grid-column:1/-1;margin:0">メニューをロード中...</p>
-          </div>
+          <div id="menu-cards" class="grid"><p class="muted center" style="grid-column:1/-1;margin:0">メニューをロード中...</p></div>
         </div>
       </div>
       <div class="card">
@@ -98,6 +98,7 @@
       </div>
     </section>
 
+    <!-- 注文完了画面 -->
     <section id="view-done" class="hidden card center">
       <h2>🎉 注文を確定しました</h2>
       <div class="spacer"></div>
@@ -106,21 +107,15 @@
       <button id="btn-finish" class="danger">終了（ログアウトして戻る）</button>
     </section>
 
-    <!-- 追加：弁当屋向け（スマホ最適） -->
+    <!-- ★ 店側UI：定休日設定付き -->
     <section id="view-vendor" class="hidden">
       <div class="card">
         <h2 style="margin:0" id="vendor-title">本日の受注状況</h2>
         <p class="muted" id="vendor-sub" style="margin:6px 0 0 0">当日分のみ表示（8:45以降は固定、14:00でリセット）</p>
       </div>
       <div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="item center" style="cursor:default">
-          <div class="muted">本日の総点数</div>
-          <div style="font-size:28px;font-weight:900" id="kpi-qty">0</div>
-        </div>
-        <div class="item center" style="cursor:default">
-          <div class="muted">本日の総金額</div>
-          <div style="font-size:28px;font-weight:900" id="kpi-amount">¥0</div>
-        </div>
+        <div class="item center" style="cursor:default"><div class="muted">本日の総点数</div><div style="font-size:28px;font-weight:900" id="kpi-qty">0</div></div>
+        <div class="item center" style="cursor:default"><div class="muted">本日の総金額</div><div style="font-size:28px;font-weight:900" id="kpi-amount">¥0</div></div>
       </div>
       <div class="card">
         <h3 style="margin:0">品目別集計</h3>
@@ -138,6 +133,19 @@
         </table>
         <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">本日分はまだ注文がありません。</p>
       </div>
+
+      <!-- ★ 追加：定休日設定 -->
+      <div class="card">
+        <h3 style="margin:0">定休日の設定</h3>
+        <p class="muted" style="margin:6px 0 12px 0">当月と翌月の休業日を選択し、「保存」で反映します（丸ごと上書き）。</p>
+        <div id="calendars" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="ghost" id="btn-closed-refresh" style="width:auto">再読込</button>
+          <button id="btn-closed-save" style="width:auto">保存</button>
+        </div>
+        <p class="muted" id="closed-msg" style="margin:8px 0 0 0"></p>
+      </div>
+
       <div class="footer-actions row">
         <button class="ghost" id="btn-vendor-refresh">更新</button>
         <button class="danger" id="btn-vendor-logout">ログアウト</button>
@@ -148,14 +156,16 @@
   <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
   <script>
-    const APP_VERSION="v2.0.0";
-    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxOiyxNhNPuwJ-mZNCjJydp85PAHpHf_88cn6fykFxcmWTyf2HmqxdFwdmTu1bfYO2KGw/exec"; // ← 最新のGASデプロイURLに差し替え
+    const APP_VERSION="v1.8.0";
+    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxChmZzgYGrl4spY5rlbjYdVuHLryU1rmVgssuKfrx2-j4MOHoy9a0vYvpD0dIeJxryTQ/exec"; // ← GASデプロイURLに変更
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
     const fmtDate=iso=>{ if(!iso) return ""; const d=new Date(iso); const y=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0"); const hh=String(d.getHours()).padStart(2,"0"),mi=String(d.getMinutes()).padStart(2,"0"); return `${y}/${mm}/${dd} ${hh}:${mi}`; };
     const store={ set(k,v){localStorage.setItem(k,JSON.stringify(v))}, get(k,def=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}, del(k){localStorage.removeItem(k)} };
+
     function show(id){ for(const sec of $$("main > section")) sec.classList.add("hidden"); document.getElementById(id).classList.remove("hidden"); }
     function showLoading(v){ $("#loading-overlay").classList.toggle("hidden",!v); $$("input,button,select").forEach(el=> el.disabled=v); }
+
     async function api(fn,method="GET",payload=null){
       showLoading(true);
       const token=store.get("token"); const url=new URL(ENDPOINT_URL); url.searchParams.set("fn",fn);
@@ -171,44 +181,37 @@
     let state={ me:null, shops:[], chosenShop:null, menu:[], cart:[] };
 
     async function doLogin(){
-      const id=$("#login-id").value.trim();
-      const pass=$("#login-pass").value.trim();
-      const err=$("#login-error"); err.textContent="";
+      const id=$("#login-id").value.trim(), pass=$("#login-pass").value.trim(), err=$("#login-error");
+      err.textContent="";
       if(!id){ err.textContent="IDを入力してください"; return; }
       if(!/^\d{4}$/.test(pass)){ err.textContent="パスワードは4桁の数字です"; return; }
+
       try{
-        const data=await api("login","POST",{id, password:pass});
+        const data=await api("login","POST",{id,password:pass});
         if(!data.ok){ err.textContent=data.error||"ログインに失敗しました"; return; }
-        store.set("token", data.token); store.set("user", data.user); state.me=data.user;
+        store.set("token",data.token); store.set("user",data.user); state.me=data.user;
 
-        // 店ログイン（s01/s02など）→ ベンダービュー
-        if(/^s\d+$/i.test(state.me.id)){
+        if(/^s\d+$/i.test(state.me.id)){ // 店ログイン
           $("#vendor-title").textContent=`本日の受注状況（${state.me.id.toUpperCase()}）`;
-          await loadVendorSummary();
-          show("view-vendor");
-          return;
+          await loadVendorSummary(); show("view-vendor"); return;
         }
-
-        // 生徒向けは従来どおり
         $("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;
-        await loadDashboard();
-        show("view-shop");
+        await loadDashboard(); show("view-shop");
       }catch(e){ err.textContent="通信エラー："+e.message; }
     }
 
     async function loadDashboard(){
-      const data=await api("dashboard","GET");
-      state.shops=data.shops||[];
+      const d=await api("dashboard","GET"); state.shops=d.shops||[];
       const box=$("#shop-cards"); box.innerHTML="";
       for(const s of state.shops){
         const div=document.createElement("div"); div.className="item";
         div.innerHTML=`<div class="row-between"><h3 style="margin:0">${s.shop_name}</h3><span class="tag">選択</span></div>`;
         div.dataset.shopId=s.shop_id;
-        div.onclick=()=>{ $$('#shop-cards .item').forEach(el=>el.classList.remove('selected')); div.classList.add('selected'); state.chosenShop=state.shops.find(x=>x.shop_id===div.dataset.shopId); setTimeout(enterMenu,200); };
+        div.onclick=()=>{ $$('#shop-cards .item').forEach(el=>el.classList.remove('selected')); div.classList.add('selected'); state.chosenShop=s; setTimeout(enterMenu,200); };
         box.appendChild(div);
       }
       const list=$("#history-list"); list.innerHTML="";
-      for(const h of (data.history||[])){
+      for(const h of (d.history||[])){
         const div=document.createElement("div"); div.className="item"; div.style.cursor="default";
         div.innerHTML=`<div class="row-between"><h4 style="margin:0">${h.shop_name||""}</h4><div class="muted">${fmtDate(h.timestamp)}</div></div>
           <div class="muted" style="margin-top:5px">${h.items.map(i=>`${i.item}（${fmtYen(i.unit_price)}）`).join("、")}</div>
@@ -220,15 +223,18 @@
 
     async function enterMenu(){
       const sid=state.chosenShop.shop_id;
-      $("#shop-title").textContent = state.chosenShop ? state.chosenShop.shop_name : "商品を選ぶ";
+      $("#shop-title").textContent=state.chosenShop.shop_name;
       const data=await api("menu","GET");
-      state.menu=(data.menu||[]).filter(m=> String(m.shop_id)===String(sid) && String(m.enabled)!=='FALSE');
-      renderMenuCards(); state.cart=[]; renderCart(); show("view-menu");
+      state.menu=(data.menu||[]).filter(m=>String(m.shop_id)===String(sid)&&String(m.enabled)!=='FALSE');
+      renderMenu(); state.cart=[]; renderCart(); show("view-menu");
     }
 
-    function renderMenuCards(){
+    function renderMenu(){
       const box=$("#menu-cards"); box.innerHTML="";
-      if(!state.menu.length){ box.innerHTML='<p class="muted center" style="grid-column:1/-1;margin:0">現在、販売中の商品はありません。</p>'; return; }
+      if(!state.menu.length){
+        box.innerHTML='<p class="muted center" style="grid-column:1/-1;margin:0">現在、販売中の商品はありません。</p>';
+        return;
+      }
       for(const m of state.menu){
         const div=document.createElement("div"); div.className="item center";
         div.innerHTML=`<h4 style="margin:0 0 8px 0">${m.item}</h4><div class="price">${fmtYen(m.price)}</div>`;
@@ -239,7 +245,11 @@
 
     function renderCart(){
       const list=$("#cart-list"); list.innerHTML=""; let total=0;
-      state.cart.forEach((c,i)=>{ total+=c.unit_price; const div=document.createElement("div"); div.className="item row-between"; div.style.cursor="default"; div.innerHTML=`<div>${c.item}</div><div class="row" style="gap:6px"><span class="price">${fmtYen(c.unit_price)}</span><button class="ghost" style="width:auto;padding:6px 10px;margin:0" data-i="${i}">削除</button></div>`; list.appendChild(div); });
+      state.cart.forEach((c,i)=>{ total+=c.unit_price;
+        const div=document.createElement("div"); div.className="item row-between"; div.style.cursor="default";
+        div.innerHTML=`<div>${c.item}</div><div class="row" style="gap:6px"><span class="price">${fmtYen(c.unit_price)}</span><button class="ghost" style="width:auto;padding:6px 10px;margin:0" data-i="${i}">削除</button></div>`;
+        list.appendChild(div);
+      });
       list.querySelectorAll("button[data-i]").forEach(b=> b.onclick=(e)=>{ const i=Number(e.currentTarget.dataset.i); state.cart.splice(i,1); renderCart(); });
       $("#cart-total").textContent=fmtYen(total); $("#cart-count").textContent=`${state.cart.length}点`;
       $("#btn-clear").onclick=()=>{ state.cart=[]; renderCart(); };
@@ -256,15 +266,120 @@
           const lines=Object.entries(counts).map(([name,c])=>`・${name} × ${c}点`).join("<br>");
           $("#done-summary").innerHTML=`<strong>日時:</strong> ${fmtDate(res.timestamp)}<br><strong>店舗:</strong> ${res.shop_name}<br><strong>合計金額:</strong> <span class="price total">${fmtYen(res.total)}</span><br><div style="margin-top:10px"><strong>注文内容:</strong><br>${lines}</div>`;
           show("view-done");
-        }else{ alert(res.error||"注文に失敗しました"); }
+        }else{
+          alert(res.error||"注文に失敗しました");
+        }
       }catch(e){ alert("通信エラー："+e.message); }
     }
 
-    // --- Vendor view ---
+    // ====== 店側：定休日カレンダー ======
+    const ClosedDays = {
+      selected: new Set(), // 'YYYY-MM-DD'
+      monthKeys: [],
+      async load(){
+        const d = await api('closed_days','GET');
+        this.selected = new Set(d.days||[]);
+        this.render();
+        $('#closed-msg').textContent = '';
+      },
+      initMonths(){
+        const now = new Date();
+        const ym = (dt)=> `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+        const cur = new Date(now.getFullYear(), now.getMonth(), 1);
+        const nxt = new Date(now.getFullYear(), now.getMonth()+1, 1);
+        this.monthKeys = [ym(cur), ym(nxt)];
+      },
+      daysInMonth(yyyy, mm){ return new Date(yyyy, mm, 0).getDate(); }, // mm:1-12
+      makeCell(dateStr){
+        const div = document.createElement('div');
+        div.textContent = Number(dateStr.slice(-2));
+        div.dataset.date = dateStr;
+        div.style.padding = '8px';
+        div.style.border = '1px solid var(--line)';
+        div.style.borderRadius = '6px';
+        div.style.textAlign = 'center';
+        div.style.cursor = 'pointer';
+        div.style.userSelect = 'none';
+        const sel = this.selected.has(dateStr);
+        if (sel){
+          div.style.background = '#ffe6e6';
+          div.style.color = '#c62828';
+          div.style.fontWeight = '700';
+        }
+        div.onclick = ()=>{
+          if (this.selected.has(dateStr)) this.selected.delete(dateStr);
+          else this.selected.add(dateStr);
+          this.render();
+        };
+        return div;
+      },
+      render(){
+        this.initMonths();
+        const wrap = $('#calendars');
+        wrap.innerHTML = '';
+
+        this.monthKeys.forEach(key=>{
+          const [y, m] = key.split('-').map(Number);
+          const first = new Date(y, m-1, 1);
+          const startW = (first.getDay()+6)%7; // 月曜は0
+          const days = this.daysInMonth(y, m);
+
+          const box = document.createElement('div');
+          box.style.border = '1px solid var(--line)';
+          box.style.borderRadius = '8px';
+          box.style.padding = '10px';
+
+          const title = document.createElement('div');
+          title.textContent = `${y}年 ${m}月`;
+          title.style.fontWeight = '700';
+          title.style.marginBottom = '6px';
+
+          const grid = document.createElement('div');
+          grid.style.display = 'grid';
+          grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+          grid.style.gap = '6px';
+
+          // 曜日
+          ['月','火','水','木','金','土','日'].forEach(w=>{
+            const wv = document.createElement('div');
+            wv.textContent = w;
+            wv.style.textAlign = 'center';
+            wv.style.fontSize = '12px';
+            wv.style.color = 'var(--muted)';
+            grid.appendChild(wv);
+          });
+
+          // 先頭空白
+          for(let i=0;i<startW;i++){
+            const emp = document.createElement('div');
+            emp.style.opacity = '0';
+            grid.appendChild(emp);
+          }
+          // 日セル
+          for(let d=1; d<=days; d++){
+            const ds = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            grid.appendChild(this.makeCell(ds));
+          }
+
+          box.appendChild(title);
+          box.appendChild(grid);
+          wrap.appendChild(box);
+        });
+      },
+      async save(){
+        const body = { dates: Array.from(this.selected).sort() };
+        const res = await api('save_closed_days','POST', body);
+        if (res.ok){
+          $('#closed-msg').textContent = '保存しました（当月＋翌月を上書き）。';
+        }else{
+          $('#closed-msg').textContent = res.error || '保存に失敗しました';
+        }
+      }
+    };
+
+    // --- ベンダービュー読み込み ---
     async function loadVendorSummary(){
       const d=await api("vendor_summary","GET");
-
-      // サブテキストに集計窓を表示（8:40前は「前日16:00〜現在」、以降は「前日16:00〜当日08:40」）
       $("#vendor-sub").textContent = d.range_label || '当日分のみ表示（8:45以降は固定、14:00でリセット）';
 
       $("#kpi-qty").textContent=String(d.total_qty||0);
@@ -281,9 +396,17 @@
         $("#vendor-rows-empty").style.display='none';
         for(const r of d.rows){ const tr=document.createElement("tr"); tr.innerHTML=`<td>${r.user_id}</td><td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`; rows.appendChild(tr); }
       }
+
+      // 定休日のカレンダーも更新
+      await ClosedDays.load();
     }
 
-    function doLogout(){ store.del("token"); store.del("user"); state={me:null,shops:[],chosenShop:null,menu:[],cart:[]}; $("#login-id").value=""; $("#login-pass").value=""; show("view-login"); }
+    function doLogout(){
+      store.del("token"); store.del("user");
+      state={me:null, shops:[], chosenShop:null, menu:[], cart:[]};
+      $("#login-id").value=""; $("#login-pass").value="";
+      show("view-login");
+    }
 
     // イベント
     $("#app-version").textContent=APP_VERSION;
@@ -293,15 +416,24 @@
     $("#btn-logout").onclick=doLogout;
     $("#btn-vendor-refresh").onclick=loadVendorSummary;
     $("#btn-vendor-logout").onclick=doLogout;
+    $("#btn-closed-refresh").onclick = ()=> ClosedDays.load();
+    $("#btn-closed-save").onclick = ()=> ClosedDays.save();
 
-    // 初期化（ログイン状態の復元）
+    // 初期化（ログイン復元）
     (async()=>{
       const token=store.get("token"); const user=store.get("user");
       if(token&&user){
         state.me=user;
-        if(/^s\d+$/i.test(user.id)){ $("#vendor-title").textContent=`本日の受注状況（${user.id.toUpperCase()}）`; await loadVendorSummary(); show("view-vendor"); }
-        else{ $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`; await loadDashboard(); show("view-shop"); }
-      } else { show("view-login"); }
+        if(/^s\d+$/i.test(user.id)){
+          $("#vendor-title").textContent=`本日の受注状況（${user.id.toUpperCase()}）`;
+          await loadVendorSummary(); show("view-vendor");
+        }else{
+          $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
+          await loadDashboard(); show("view-shop");
+        }
+      }else{
+        show("view-login");
+      }
     })();
   </script>
 </body>
