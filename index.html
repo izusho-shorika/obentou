@@ -217,7 +217,7 @@
   <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
   <script>
-    const APP_VERSION="v2.2.1";
+    const APP_VERSION="v2.2.2";
     const ENDPOINT_URL="https://script.google.com/macros/s/AKfycby9xwIPN96ICFF9Bvifv3yhaa5ROmSepigmQMRXORG15HeBXDShSVq08osjsW7_HDEEPA/exec"; // ← あなたのGASウェブアプリURL（/exec）に差し替え
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
@@ -425,6 +425,43 @@
         }else{ alert(res.error||"注文に失敗しました"); }
       }catch(e){ alert("通信エラー："+e.message); }
     }
+    /* ---------- 店側：提供日ベース集計 ---------- */
+async function loadVendorSummary(){
+  const d = await api("vendor_summary","GET");
+  const uid = (store.get('user')||{}).id?.toUpperCase() || '';
+  $("#vendor-title").textContent = `${d.title_label || '受注状況'}（${uid}）`;
+  $("#vendor-sub").textContent   = d.sub_label || '—';
+
+  // KPI
+  $("#kpi-qty").textContent = String(d.total_qty || 0);
+  $("#kpi-amount").textContent = fmtYen(d.total_amount || 0);
+
+  // 品目別集計
+  const by=$("#vendor-byitem"); by.innerHTML="";
+  if(!(d.by_item||[]).length){
+    $("#vendor-byitem-empty").style.display='block';
+  }else{
+    $("#vendor-byitem-empty").style.display='none';
+    for(const r of d.by_item){
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`;
+      by.appendChild(tr);
+    }
+  }
+
+  // 注文詳細
+  const rows=$("#vendor-rows"); rows.innerHTML="";
+  if(!(d.rows||[]).length){
+    $("#vendor-rows-empty").style.display='block';
+  }else{
+    $("#vendor-rows-empty").style.display='none';
+    for(const r of d.rows){
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td>${r.user_id}</td><td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`;
+      rows.appendChild(tr);
+    }
+  }
+}
 
     /* ---------- 店側：定休日 ---------- */
     const ClosedDays = {
