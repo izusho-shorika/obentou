@@ -334,42 +334,37 @@ try{
   if(!(n.news||[]).length){ $('#news-empty').style.display='block'; }
   else{
     $('#news-empty').style.display='none';
-    n.news.forEach(item=>{
+
+    // 1店舗ずつ本文も取得して、最初から展開表示
+    for (const item of n.news){
       const d = item.updated_at ? new Date(item.updated_at) : null;
       const ymd = d ? `${fmtMD(d)}（${wd(d)}）` : '';
+
       const row = document.createElement('div');
       row.className = 'news-item';
       row.innerHTML = `
         <div class="shop-avatar">${(item.shop_name||'?').slice(0,1)}</div>
         <div style="flex:1">
-          <div class="news-title" style="cursor:pointer" data-shop="${item.shop_id}">${item.shop_name} — ${item.title || '(タイトル未設定)'}</div>
+          <div class="news-title">${item.shop_name} — ${item.title || '(タイトル未設定)'}</div>
           <div class="news-date" style="margin:4px 0 6px 0">${ymd}</div>
-          <div class="notice-body" style="display:none"></div>
+          <div class="notice-body"></div>
         </div>
       `;
 
-      // タイトルクリックで本文を展開（初回のみAPIで取得してキャッシュ）
-      const titleEl = row.querySelector('.news-title');
-      const bodyEl  = row.querySelector('.notice-body');
-      titleEl.addEventListener('click', async ()=>{
-        // 未ロードなら取得
-        if(!bodyEl.dataset.loaded){
-          try{
-            const shopId = titleEl.getAttribute('data-shop');
-            const res = await api('messages','GET',{shop_id: shopId});
-            const first = (res.ok && res.list && res.list[0]) ? res.list[0] : null;
-            bodyEl.innerHTML = first ? Text.autoLinkAndBreaks(first.body || '') : '（本文はありません）';
-            bodyEl.dataset.loaded = '1';
-          }catch(e){
-            bodyEl.innerHTML = '（本文の取得に失敗しました）';
-            bodyEl.dataset.loaded = '1';
-          }
-        }
-        // 開閉トグル
-        bodyEl.style.display = (bodyEl.style.display==='none' || bodyEl.style.display==='') ? 'block' : 'none';
-      });
+      const bodyEl = row.querySelector('.notice-body');
+
+      try{
+        const res = await api('messages','GET',{shop_id: item.shop_id});
+        const first = (res.ok && res.list && res.list[0]) ? res.list[0] : null;
+        bodyEl.innerHTML = first ? Text.autoLinkAndBreaks(first.body || '') : '（本文はありません）';
+      }catch(e){
+        bodyEl.innerHTML = '（本文の取得に失敗しました）';
+      }
+
+      // ★ 最初から展開
+      bodyEl.style.display = 'block';
       list.appendChild(row);
-    });
+    }
   }
 } catch(e){
   // 新着だけ失敗しても全体は表示を続ける
