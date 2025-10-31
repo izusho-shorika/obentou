@@ -15,8 +15,9 @@
     .card{background:var(--card-bg);border:1px solid var(--line);border-radius:var(--radius);padding:var(--spacing);margin:20px 0;box-shadow:var(--shadow)}
     .row{display:flex;gap:10px;align-items:center}
     .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    input,select,button{font-size:16px;padding:12px;border-radius:8px;border:1px solid var(--line);width:100%;margin:8px 0;transition:border-color .2s,background-color .2s,box-shadow .2s}
-    input:focus,select:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(74,144,226,.2)}
+    input,select,button,textarea{font-size:16px;padding:12px;border-radius:8px;border:1px solid var(--line);width:100%;margin:8px 0;transition:border-color .2s,background-color .2s,box-shadow .2s}
+    textarea{min-height:120px;resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(74,144,226,.2)}
     button{background:var(--primary);color:#fff;border:none;font-weight:600;cursor:pointer}
     button:hover{background:var(--primary-dark)}
     button:active{background:var(--primary-dark);transform:scale(.99)}
@@ -49,6 +50,12 @@
     .order-card{border-width:2px;}
     .order-pending{border-color:#3b82f6;}  /* 青 */
     .order-confirmed{border-color:#ef4444;}/* 赤 */
+
+    /* お知らせ */
+    .notice-title{font-weight:700;cursor:pointer}
+    .notice-body{margin-top:6px;font-size:14px;line-height:1.6;display:none;white-space:pre-wrap}
+    .notice-item{border-left:4px solid #e6f0ff;padding-left:8px}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:11px;margin-left:6px}
   </style>
 </head>
 <body>
@@ -81,8 +88,15 @@
       <div class="footer-actions row"><button class="ghost" id="btn-logout">ログアウト</button></div>
     </section>
 
-    <!-- メニュー -->
+    <!-- メニュー（生徒） -->
     <section id="view-menu" class="hidden">
+      <!-- NEW: お店からのお知らせ -->
+      <div id="notice-card" class="card hidden">
+        <h3 style="margin-top:0">お店からのお知らせ</h3>
+        <div id="notice-list" class="list"></div>
+        <p id="notice-empty" class="muted" style="margin:6px 0 0 0">現在、お知らせはありません。</p>
+      </div>
+
       <div class="card">
         <div class="row-between">
           <h2 style="margin:0;flex-grow:1" id="shop-title">商品を選ぶ</h2>
@@ -148,6 +162,30 @@
         <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">注文がありません。</p>
       </div>
 
+      <!-- NEW: お店からのお知らせ（入力＆最新3件） -->
+      <div class="card">
+        <h3 style="margin:0">お店からのお知らせ（投稿）</h3>
+        <p class="muted" style="margin:6px 0 8px 0">プレーンテキスト＋改行のみ（URLは自動リンクされます）</p>
+        <input id="msg-title" placeholder="タイトル">
+        <textarea id="msg-body" placeholder="内容（プレーンテキスト、改行可）"></textarea>
+        <div class="row" style="gap:12px">
+          <label class="row" style="gap:6px;width:auto"><input type="checkbox" id="msg-pinned"> ピン留め</label>
+          <label class="row" style="gap:6px;width:auto">表示期限（任意）
+            <input type="date" id="msg-visible-until" style="width:auto">
+          </label>
+          <label class="row" style="gap:6px;width:auto"><input type="checkbox" id="msg-enabled" checked> 有効</label>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="ghost" id="btn-msg-refresh" style="width:auto">再読込</button>
+          <button id="btn-msg-save" style="width:auto">保存</button>
+        </div>
+        <p class="muted" id="msg-status" style="margin:8px 0 0 0"></p>
+        <hr style="margin:14px 0">
+        <h4 style="margin:0 0 8px 0">最新3件</h4>
+        <div id="vendor-msg-list" class="list"></div>
+        <p id="vendor-msg-empty" class="muted" style="margin:6px 0 0 0">まだお知らせはありません。</p>
+      </div>
+
       <!-- 定休日設定 -->
       <div class="card">
         <h3 style="margin:0">定休日の設定</h3>
@@ -170,21 +208,21 @@
   <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
   <script>
-    const APP_VERSION="v2.0.3";
-    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbwkaOrDtV96BL3nzAoQI7cKuzLwmL3t6Ph8LVGDNx_sNO-m69nUNMSppWJfM5dFkDHdvA/exec"; // ← あなたのGASデプロイURL
+    const APP_VERSION="v2.2.0";
+    const ENDPOINT_URL="hhttps://script.google.com/macros/s/AKfycbwUu4oKEbWMzyiuqh_cHzr61Ge-Hc1aoo-ewHROgJ8kDc8n7lHnlRZeYdUO5gBcXYW7zQ/exec"; // ← あなたのGASデプロイURL
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
     const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`};
     const store={set(k,v){localStorage.setItem(k,JSON.stringify(v))},get(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},del(k){localStorage.removeItem(k)}};
     function show(id){$$("main>section").forEach(s=>s.classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
-    function showLoading(v){$("#loading-overlay").classList.toggle("hidden",!v);$$("input,button,select").forEach(e=>e.disabled=v)}
+    function showLoading(v){$("#loading-overlay").classList.toggle("hidden",!v);$$("input,button,select,textarea").forEach(e=>e.disabled=v)}
     async function api(fn,method="GET",body=null){
       showLoading(true);
       const token=store.get("token");
       const u=new URL(ENDPOINT_URL);u.searchParams.set("fn",fn);
       try{
         let r;
-        if(method==="GET"){ if(token)u.searchParams.set("token",token); r=await fetch(u); }
+        if(method==="GET"){ if(token)u.searchParams.set("token",token); if(body && body.shop_id) u.searchParams.set("shop_id",body.shop_id); r=await fetch(u); }
         else{
           const f=new URLSearchParams();
           if(body) for(const[k,v] of Object.entries(body)) f.append(k, typeof v==="object"?JSON.stringify(v):String(v));
@@ -198,6 +236,21 @@
 
     let state={ me:null, shops:[], chosenShop:null, menu:[], cart:[] };
 
+    /* ---------- 共通：テキストを安全に表示（URL自動リンク＋改行） ---------- */
+    const Text = {
+      autoLinkAndBreaks(text){
+        const safe = document.createElement('div');
+        safe.textContent = text || '';
+        let s = safe.textContent;
+        // URL自動リンク
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        s = s.replace(urlRegex, (m)=>`<a href="${m}" target="_blank" rel="noopener noreferrer">${m}</a>`);
+        // 改行
+        s = s.replace(/\n/g,'<br>');
+        return s;
+      }
+    };
+
     /* ---------- ログイン ---------- */
     async function doLogin(){
       const id=$("#login-id").value.trim(), pass=$("#login-pass").value.trim(), err=$("#login-error");
@@ -209,7 +262,7 @@
         if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
         store.set("token",d.token);store.set("user",d.user);
         state.me=d.user;
-        if(/^s\d+/i.test(state.me.id)){await loadVendorSummary();show("view-vendor")}
+        if(/^s\d+/i.test(state.me.id)){await loadVendorSummary();await VendorMessages.load();show("view-vendor")}
         else{$("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;await loadDashboard();show("view-shop")}
       }catch(e){err.textContent="通信エラー："+e.message}
     }
@@ -271,10 +324,55 @@
     async function enterMenu(){
       const sid=state.chosenShop.shop_id;
       $("#shop-title").textContent=state.chosenShop.shop_name;
+
+      // ① お知らせ読込
+      await loadShopMessages(sid);
+
+      // ② メニュー読込
       const d=await api("menu","GET");
       state.menu=(d.menu||[]).filter(m=>String(m.shop_id)===String(sid)&&String(m.enabled)!=='FALSE');
       renderMenu(); state.cart=[]; renderCart(); show("view-menu");
     }
+
+    // NEW: 生徒向け お知らせ表示
+    async function loadShopMessages(shop_id){
+      const res = await api('messages','GET',{shop_id});
+      const list = res.ok ? (res.list||[]) : [];
+      const wrap = $('#notice-list'); wrap.innerHTML='';
+      const empty = $('#notice-empty');
+      const card = $('#notice-card');
+
+      if(!list.length){
+        empty.style.display='block';
+        card.classList.add('hidden'); // 空なら非表示
+        return;
+      }
+      empty.style.display='none';
+      card.classList.remove('hidden');
+
+      list.forEach(m=>{
+        const item = document.createElement('div');
+        item.className = 'item notice-item';
+        const dateLabel = m.updated_at ? new Date(m.updated_at) : null;
+        const ymd = dateLabel ? `${dateLabel.getFullYear()}/${String(dateLabel.getMonth()+1).padStart(2,'0')}/${String(dateLabel.getDate()).padStart(2,'0')}` : '';
+
+        item.innerHTML = `
+          <div class="row-between">
+            <div class="notice-title">${m.title || '(無題)'}</div>
+            <div class="muted">${ymd}</div>
+          </div>
+          ${m.pinned ? '<div class="pill">PIN</div>' : ''}
+          <div class="notice-body"></div>
+        `;
+        const body = item.querySelector('.notice-body');
+        body.innerHTML = Text.autoLinkAndBreaks(m.body||'');
+
+        const titleEl = item.querySelector('.notice-title');
+        titleEl.onclick = ()=>{ body.style.display = (body.style.display==='none'||body.style.display==='') ? 'block' : 'none'; };
+        wrap.appendChild(item);
+      });
+    }
+
     function renderMenu(){
       const box=$("#menu-cards");box.innerHTML="";
       if(!state.menu.length){box.innerHTML='<p class="muted center" style="grid-column:1/-1">販売中の商品はありません。</p>';return}
@@ -422,9 +520,71 @@
           rows.appendChild(tr);
         }
       }
-
-      await ClosedDays.load();
     }
+
+    /* ---------- 店側：お知らせ ---------- */
+    const VendorMessages = {
+      list: [],
+      async load(){
+        const uid = (store.get('user')||{}).id?.toUpperCase() || '';
+        if(!uid) return;
+        const res = await api('messages','GET',{shop_id: uid});
+        this.list = res.ok ? (res.list||[]) : [];
+        this.render();
+        $('#msg-status').textContent = '';
+      },
+      render(){
+        const wrap = $('#vendor-msg-list'); wrap.innerHTML='';
+        const empty = $('#vendor-msg-empty');
+
+        if(!this.list.length){ empty.style.display='block'; return; }
+        empty.style.display='none';
+
+        this.list.forEach(m=>{
+          const item = document.createElement('div');
+          item.className = 'item notice-item';
+          const d = m.updated_at ? new Date(m.updated_at) : null;
+          const ymd = d ? `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}` : '';
+          item.innerHTML = `
+            <div class="row-between">
+              <div class="notice-title">${m.title || '(無題)'}</div>
+              <div class="muted">${ymd}</div>
+            </div>
+            ${m.pinned ? '<div class="pill">PIN</div>' : ''}
+            <div class="notice-body"></div>
+          `;
+          const body = item.querySelector('.notice-body');
+          body.innerHTML = Text.autoLinkAndBreaks(m.body||'');
+          const title = item.querySelector('.notice-title');
+          title.onclick = ()=>{ body.style.display = (body.style.display==='none'||body.style.display==='') ? 'block' : 'none'; };
+          wrap.appendChild(item);
+        });
+      },
+      async save(){
+        const title = $('#msg-title').value.trim();
+        const body  = $('#msg-body').value.trim();
+        const pinned = $('#msg-pinned').checked;
+        const vu = $('#msg-visible-until').value; // yyyy-mm-dd or ''
+        const enabled = $('#msg-enabled').checked;
+
+        if(!title || !body){
+          $('#msg-status').textContent = 'タイトルと内容は必須です。';
+          return;
+        }
+        const res = await api('save_message','POST',{
+          title, body, pinned,
+          visible_until: vu || '',
+          enabled
+        });
+        if(res.ok){
+          $('#msg-status').textContent = '保存しました。生徒画面は再読込で即反映されます。';
+          $('#msg-title').value=''; $('#msg-body').value=''; $('#msg-pinned').checked=false; $('#msg-visible-until').value=''; $('#msg-enabled').checked=true;
+          await this.load();
+        }else{
+          $('#msg-status').textContent = res.error || '保存に失敗しました。';
+        }
+      }
+    };
 
     /* ---------- 共通 ---------- */
     function doLogout(){
@@ -440,17 +600,21 @@
     $("#btn-back-shop").onclick=()=> show("view-shop");
     $("#btn-finish").onclick=doLogout;
     $("#btn-logout").onclick=doLogout;
-    $("#btn-vendor-refresh").onclick=loadVendorSummary;
+    $("#btn-vendor-refresh").onclick=async()=>{ await loadVendorSummary(); await VendorMessages.load(); };
     $("#btn-vendor-logout").onclick=doLogout;
     $("#btn-closed-refresh").onclick = ()=> ClosedDays.load();
     $("#btn-closed-save").onclick = ()=> ClosedDays.save();
+
+    // NEW: ベンダー側お知らせボタン
+    $("#btn-msg-refresh").onclick = ()=> VendorMessages.load();
+    $("#btn-msg-save").onclick = ()=> VendorMessages.save();
 
     // 復元
     (async()=>{
       const token=store.get("token"); const user=store.get("user");
       if(token&&user){
         state.me=user;
-        if(/^s\d+$/i.test(user.id)){ await loadVendorSummary(); show("view-vendor"); }
+        if(/^s\d+$/i.test(user.id)){ await loadVendorSummary(); await VendorMessages.load(); await ClosedDays.load(); show("view-vendor"); }
         else{ $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`; await loadDashboard(); show("view-shop"); }
       }else{ show("view-login"); }
     })();
