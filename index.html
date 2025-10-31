@@ -85,22 +85,46 @@
     .row-wrap>label>input[type="date"]{width:auto}
     @media (max-width:640px){.row-wrap>label{flex:1 1 180px}}
 
-    /* ▼ ログイン画面専用（スコープ） */
-    #view-login .status-grid{display:grid;grid-template-columns:1.2fr repeat(3,.8fr);gap:10px;align-items:center}
-    #view-login .status-row{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;
-      grid-template-columns:1.2fr repeat(3,.8fr);gap:10px;align-items:center}
+    /* ▼ ログイン画面専用（営業情報） */
+    #view-login .status-grid,
+    #view-login .status-row{
+      display:grid;
+      grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
+      gap:10px; align-items:center;
+    }
+    @media (max-width:640px){
+      #view-login .status-grid,
+      #view-login .status-row{
+        grid-template-columns: 1fr 60px 60px 60px;
+      }
+    }
+    /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
+    #status-header > div:not(:first-child){ text-align:right; }
+    /* ◯×セルは中央寄せ */
+    #view-login .status-row > div:nth-child(n+2){ text-align:center; }
+
+    /* 長い店名を1行省略、縦に伸びない */
+    #view-login .shop-chip{
+      display:grid;
+      grid-template-columns: 28px 1fr; /* アバター + 店名 */
+      align-items:center;
+      gap:8px;
+      min-width:0;
+    }
+    #view-login .shop-name{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      min-width:0;
+    }
+
     #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
     #view-login .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
     #view-login .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
-    #view-login .shop-chip{display:inline-flex;align-items:center;gap:8px;font-weight:700}
     #view-login .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
     #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
     #view-login .news-title{font-weight:700;line-height:1.5}
     #view-login .news-date{font-size:12px;color:#667085}
-    @media (max-width:640px){
-      #view-login .status-grid,#view-login .status-row{grid-template-columns:1fr 1fr 1fr 1fr}
-      #view-login .col-hide-sm{display:none}
-    }
   </style>
 </head>
 <body>
@@ -146,27 +170,37 @@
     </div>
   </section>
 
-  <!-- 生徒トップ -->
+  <!-- 生徒 -->
   <section id="view-shop" class="hidden">
     <h3 id="welcome-message" style="margin-top:0;font-weight:normal"></h3>
-    <div class="card"><h2 style="margin-top:0">弁当屋を選択</h2><div id="shop-cards" class="list"></div></div>
-    <div class="card"><h3 style="margin-top:0">最近の注文（最新5件）</h3><div id="history-list" class="list"></div></div>
+    <div class="card">
+      <h2 style="margin-top:0">弁当屋を選択</h2>
+      <div id="shop-cards" class="list"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">最近の注文（最新5件）</h3>
+      <div id="history-list" class="list"></div>
+    </div>
     <div class="footer-actions row"><button class="ghost" id="btn-logout">ログアウト</button></div>
   </section>
 
-  <!-- メニュー -->
+  <!-- メニュー（生徒） -->
   <section id="view-menu" class="hidden">
+    <!-- お店からのお知らせ -->
     <div id="notice-card" class="card hidden">
       <h3 style="margin-top:0">お店からのお知らせ</h3>
       <div id="notice-list" class="list"></div>
       <p id="notice-empty" class="muted" style="margin:6px 0 0 0">現在、お知らせはありません。</p>
     </div>
+
     <div class="card">
       <div class="row-between">
-        <h2 id="shop-title" style="margin:0;flex-grow:1">商品を選ぶ</h2>
+        <h2 style="margin:0;flex-grow:1" id="shop-title">商品を選ぶ</h2>
         <button class="ghost" id="btn-back-shop">← 戻る</button>
       </div>
-      <div style="margin:16px 0"><div id="menu-cards" class="grid"><p class="muted center" style="grid-column:1/-1;margin:0">メニューをロード中...</p></div></div>
+      <div style="margin:16px 0">
+        <div id="menu-cards" class="grid"><p class="muted center" style="grid-column:1/-1;margin:0">メニューをロード中...</p></div>
+      </div>
     </div>
     <div class="card">
       <h3 style="margin-top:0">注文内容（合計<span id="cart-count" class="tag" style="margin-left:0">0点</span>）</h3>
@@ -184,8 +218,10 @@
   <!-- 完了 -->
   <section id="view-done" class="hidden card center">
     <h2>🎉 注文を確定しました</h2>
-    <div class="spacer"></div><p id="done-summary" style="text-align:left"></p>
-    <div class="spacer"></div><button id="btn-finish" class="danger">終了（ログアウトして戻る）</button>
+    <div class="spacer"></div>
+    <p id="done-summary" style="text-align:left"></p>
+    <div class="spacer"></div>
+    <button id="btn-finish" class="danger">終了（ログアウトして戻る）</button>
   </section>
 
   <!-- 店側 -->
@@ -222,30 +258,32 @@
       <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">注文がありません。</p>
     </div>
 
-    <!-- お店からのお知らせ（投稿） -->
+    <!-- お店からのお知らせ（入力＆最新3件） -->
     <div class="card">
       <h3 style="margin:0">お店からのお知らせ（投稿）</h3>
       <p class="muted" style="margin:6px 0 8px 0">プレーンテキスト＋改行のみ（URLは自動リンクされます）</p>
       <input id="msg-title" placeholder="タイトル">
       <textarea id="msg-body" placeholder="内容（プレーンテキスト、改行可）"></textarea>
+
       <div class="row-wrap" style="margin-top:2px">
         <label>表示期限（任意）
           <input type="date" id="msg-visible-until">
         </label>
         <label><input type="checkbox" id="msg-enabled" checked> 有効</label>
       </div>
+
       <div class="row" style="margin-top:8px">
         <button class="ghost" id="btn-msg-refresh" style="width:auto">再読込</button>
         <button id="btn-msg-save" style="width:auto">保存</button>
       </div>
-      <p class="muted" id="msg-status" style="margin:8px 0 0 0"></p>
-      <hr style="margin:14px 0">
-      <h4 style="margin:0 0 8px 0">最新3件</h4>
-      <div id="vendor-msg-list" class="list"></div>
-      <p id="vendor-msg-empty" class="muted" style="margin:6px 0 0 0">まだお知らせはありません。</p>
+        <p class="muted" id="msg-status" style="margin:8px 0 0 0"></p>
+        <hr style="margin:14px 0">
+        <h4 style="margin:0 0 8px 0">最新3件</h4>
+        <div id="vendor-msg-list" class="list"></div>
+        <p id="vendor-msg-empty" class="muted" style="margin:6px 0 0 0">まだお知らせはありません。</p>
     </div>
 
-    <!-- 定休日の設定 -->
+    <!-- 定休日設定 -->
     <div class="card">
       <h3 style="margin:0">定休日の設定</h3>
       <p class="muted" style="margin:6px 0 12px 0">当月と翌月の休業日を選択し、「保存」で反映します（丸ごと上書き）。</p>
@@ -270,7 +308,7 @@
 /* =========================
    基本情報
 ========================= */
-const APP_VERSION="v2.4.0-fast";
+const APP_VERSION="v2.4.2-fast-align";
 const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbww1-igL4m5aMGhn_fJlFGFlOkXx9Nh1QPeb1z3yL9TV25CviTxC6X3vZpHppCsLYAMig/exec"; // ← あなたのGAS /exec に差し替え
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
@@ -304,7 +342,7 @@ function showLoading(on){
     _loaderTimer=setTimeout(()=>{
       $("#loading-overlay").classList.remove("hidden");
       $$("input,button,select,textarea").forEach(e=>e.disabled=true);
-    }, 300); // 0.3秒後に表示（瞬間的な処理では出さない）
+    }, 300); // 0.3秒後に表示
   }else{
     $("#loading-overlay").classList.add("hidden");
     $$("input,button,select,textarea").forEach(e=>e.disabled=false);
@@ -393,7 +431,7 @@ async function loadPublicOverview(force=false){
   const cNews=cache.get('latest_news',60);
   if(cNews) renderNews(cNews);
 
-  // ネット取得（ボタン時はforce=trueで必ず最新）
+  // 最新取得（ボタン時はforce=trueだが、ここでは同じ挙動でOK）
   try{
     const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0});
     cache.set('public_overview',d); renderOverview(d);
@@ -405,12 +443,24 @@ async function loadPublicOverview(force=false){
 }
 
 function renderOverview(d){
-  const rows=$("#status-rows"); if(!rows) return; rows.innerHTML='';
-  if(!(d&&d.shops&&d.shops.length)){ $("#status-empty").style.display='block'; return; }
-  $("#status-empty").style.display='none';
+  const rows=document.getElementById("status-rows");
+  if(!rows) return;
+  rows.innerHTML="";
+  if(!(d&&d.shops&&d.shops.length)){
+    document.getElementById("status-empty").style.display="block";
+    return;
+  }
+  document.getElementById("status-empty").style.display="none";
   d.shops.forEach(s=>{
-    const div=document.createElement('div'); div.className='status-row';
-    div.innerHTML=`<div class="shop-chip"><span class="shop-avatar">${(s.shop_name||'?').slice(0,1)}</span> ${s.shop_name}</div>${(s.days||[]).map(x=>`<div class="${x.open?'badge-ok':'badge-ng'}">${x.open?'◯':'×'}</div>`).join('')}`;
+    const div=document.createElement("div");
+    div.className="status-row";
+    div.innerHTML=`
+      <div class="shop-chip">
+        <span class="shop-avatar">${(s.shop_name||'?').slice(0,1)}</span>
+        <span class="shop-name">${s.shop_name}</span>
+      </div>
+      ${(s.days||[]).map(x=>`<div class="${x.open?'badge-ok':'badge-ng'}">${x.open?'◯':'×'}</div>`).join('')}
+    `;
     rows.appendChild(div);
   });
 }
@@ -527,7 +577,7 @@ async function enterMenu(){
   const sid=state.chosenShop.shop_id;
   $("#shop-title").textContent=state.chosenShop.shop_name;
 
-  // 直近キャッシュ即時表示（5分）
+  // キャッシュ即時表示（5分）
   const cacheKeyMsg=`msg_${sid}`;
   const cacheKeyMenu=`menu_${sid}`;
   const cMsg=cache.get(cacheKeyMsg,300);
@@ -537,29 +587,26 @@ async function enterMenu(){
 
   showLoading(true);
   try{
-    // 並列取得（サーバがshop_id対応していなくても前端でfilterするので安全）
     const [msgRes, menuRes] = await Promise.all([
       api('messages','GET',{shop_id:sid},{withLoader:false,timeoutMs:7000,retries:0}),
       api('menu','GET',{shop_id:sid},{withLoader:false,timeoutMs:7000,retries:0})
     ]);
 
-    // お知らせ
     const list = msgRes.ok ? (msgRes.list||[]) : [];
     renderShopMessages(list);
     cache.set(cacheKeyMsg, list);
 
-    // メニュー
     const menuAll = (menuRes.menu||[]);
     state.menu = menuAll.filter(m=>String(m.shop_id)===String(sid) && String(m.enabled)!=='FALSE');
     renderMenu();
     cache.set(cacheKeyMenu, state.menu);
 
-    // カート初期化＆表示
     state.cart=[]; renderCart();
     show("view-menu");
   } finally { showLoading(false); }
 }
 
+// 生徒向けお知らせ（最新は開いた状態）
 function renderShopMessages(list){
   const wrap=$('#notice-list'); const empty=$('#notice-empty'); const card=$('#notice-card');
   if(!wrap||!empty||!card) return;
