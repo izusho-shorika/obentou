@@ -267,98 +267,99 @@
 <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
 <script>
-const APP_VERSION="v2.3.1";
+/* =========================
+   基本情報
+========================= */
+const APP_VERSION="v2.4.0-fast";
 const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbww1-igL4m5aMGhn_fJlFGFlOkXx9Nh1QPeb1z3yL9TV25CviTxC6X3vZpHppCsLYAMig/exec"; // ← あなたのGAS /exec に差し替え
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
 const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).toString().padStart(2,"0")}:${String(d.getMinutes()).toString().padStart(2,"0")}`};
-const store={set(k,v){localStorage.setItem(k,JSON.stringify(v))},get(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},del(k){localStorage.removeItem(k)}};
-function show(id){$$("main>section").forEach(s=>s.classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
-function showLoading(v){$("#loading-overlay").classList.toggle("hidden",!v);$$("input,button,select,textarea").forEach(e=>e.disabled=v)}
-async function api(fn,method="GET",body=null){
-  showLoading(true);
-  const token=store.get("token");
-  const u=new URL(ENDPOINT_URL);u.searchParams.set("fn",fn);
-  try{
-    let r;
-    if(method==="GET"){
-      if(token)u.searchParams.set("token",token);
-      if(body) Object.entries(body).forEach(([k,v])=> u.searchParams.set(k,v));
-      r=await fetch(u);
-    }else{
-      const f=new URLSearchParams();
-      if(body) for(const[k,v] of Object.entries(body)) f.append(k, typeof v==="object"?JSON.stringify(v):String(v));
-      if(token) f.append("token",token);
-      r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:f});
-    }
-    const text = await r.text();
-    if(!r.ok){ throw new Error(`${r.status} ${r.statusText} - ${text.slice(0,120)}`); }
-    return JSON.parse(text);
-  } finally { showLoading(false); }
+
+/* =========================
+   軽量ストア＆キャッシュ
+========================= */
+const store={
+  set(k,v){localStorage.setItem(k,JSON.stringify(v))},
+  get(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  del(k){localStorage.removeItem(k)}
+};
+
+const cache={
+  get(key, ttlSec){
+    const raw=localStorage.getItem(`cache:${key}`); if(!raw) return null;
+    try{ const {t,v}=JSON.parse(raw); if(Date.now()-t>ttlSec*1000) return null; return v; }catch{ return null; }
+  },
+  set(key, value){ localStorage.setItem(`cache:${key}`, JSON.stringify({t: Date.now(), v:value})) },
+  del(key){ localStorage.removeItem(`cache:${key}`) }
+};
+
+/* =========================
+   遅延ローダー（体感改善）
+========================= */
+let _loaderTimer=null;
+function showLoading(on){
+  clearTimeout(_loaderTimer);
+  if(on){
+    _loaderTimer=setTimeout(()=>{
+      $("#loading-overlay").classList.remove("hidden");
+      $$("input,button,select,textarea").forEach(e=>e.disabled=true);
+    }, 300); // 0.3秒後に表示（瞬間的な処理では出さない）
+  }else{
+    $("#loading-overlay").classList.add("hidden");
+    $$("input,button,select,textarea").forEach(e=>e.disabled=false);
+  }
 }
 
-/* ---------- 公開ビュー：営業情報＋新着情報（ログイン画面） ---------- */
-async function loadPublicOverview(){
-  // 日付ラベル（今日+1+2）
-  const today=new Date();
-  const dates=[0,1,2].map(n=>new Date(today.getFullYear(),today.getMonth(),today.getDate()+n));
-  ['day0-label','day1-label','day2-label'].forEach((id,i)=>{
-    const d=dates[i]; const wd=['日','月','火','水','木','金','土'][d.getDay()];
-    document.getElementById(id).textContent = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）`;
-  });
+/* =========================
+   API（タイムアウト/再試行付き）
+========================= */
+async function apiCore(fn,method="GET",body=null){
+  const token=store.get("token");
+  const u=new URL(ENDPOINT_URL); u.searchParams.set("fn",fn);
+  let r;
+  if(method==="GET"){
+    if(token) u.searchParams.set("token",token);
+    if(body) Object.entries(body).forEach(([k,v])=> u.searchParams.set(k, typeof v==="object"?JSON.stringify(v):String(v)));
+    r=await fetch(u);
+  }else{
+    const f=new URLSearchParams();
+    if(body) for(const[k,v] of Object.entries(body)) f.append(k, typeof v==="object"?JSON.stringify(v):String(v));
+    if(token) f.append("token",token);
+    r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:f});
+  }
+  const text=await r.text();
+  if(!r.ok){ throw new Error(`${r.status} ${r.statusText} - ${text.slice(0,120)}`); }
+  return JSON.parse(text);
+}
 
-  // 営業情報
+async function api(fn,method="GET",body=null,{timeoutMs=7000,retries=1,withLoader=true}={}){
+  if(withLoader) showLoading(true);
   try{
-    const d=await api('public_overview','GET'); // {shops:[{shop_id,shop_name,days:[{open:true/false}×3]}]}
-    const rows=$("#status-rows"); rows.innerHTML='';
-    if(!(d.shops||[]).length){ $("#status-empty").style.display='block'; }
-    else{
-      $("#status-empty").style.display='none';
-      d.shops.forEach(s=>{
-        const div=document.createElement('div'); div.className='status-row';
-        div.innerHTML = `
-          <div class="shop-chip"><span class="shop-avatar">${(s.shop_name||'?').slice(0,1)}</span> ${s.shop_name}</div>
-          ${s.days.map(x=> `<div class="${x.open?'badge-ok':'badge-ng'}">${x.open?'◯':'×'}</div>`).join('')}
-        `;
-        rows.appendChild(div);
-      });
-    }
-  }catch(e){ console.warn('public_overview error', e); }
-
-  // 新着情報（本文は最初から展開）
-  try{
-    const n=await api('latest_messages_all','GET'); // {news:[{shop_id,shop_name,title,updated_at}]}
-    const list=$("#news-list"); list.innerHTML='';
-    if(!(n.news||[]).length){ $("#news-empty").style.display='block'; }
-    else{
-      $("#news-empty").style.display='none';
-      for(const item of n.news){
-        const d=item.updated_at?new Date(item.updated_at):null;
-        const ymd=d?`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${['日','月','火','水','木','金','土'][d.getDay()]}）`:'';
-        const row=document.createElement('div'); row.className='news-item';
-        row.innerHTML=`
-          <div class="shop-avatar">${(item.shop_name||'?').slice(0,1)}</div>
-          <div style="flex:1">
-            <div class="news-title">${item.shop_name} — ${item.title || '(タイトル未設定)'}</div>
-            <div class="news-date" style="margin:4px 0 6px 0">${ymd}</div>
-            <div class="notice-body"></div>
-          </div>
-        `;
-        const bodyEl=row.querySelector('.notice-body');
-        try{
-          const res=await api('messages','GET',{shop_id:item.shop_id});
-          const first=(res.ok && res.list && res.list[0])?res.list[0]:null;
-          bodyEl.innerHTML = first ? Text.autoLinkAndBreaks(first.body||'') : '（本文はありません）';
-        }catch(e){ bodyEl.innerHTML='（本文の取得に失敗しました）'; }
-        bodyEl.style.display='block';
-        list.appendChild(row);
+    for(let attempt=0; attempt<=retries; attempt++){
+      try{
+        return await Promise.race([
+          apiCore(fn,method,body),
+          new Promise((_,rej)=> setTimeout(()=>rej(new Error('timeout')), timeoutMs))
+        ]);
+      }catch(e){
+        if(attempt===retries) throw e;
       }
     }
-  }catch(e){ console.warn('latest_messages_all error', e); }
+  } finally {
+    if(withLoader) showLoading(false);
+  }
 }
 
-/* ---------- ユーティリティ ---------- */
-const Text = {
+/* =========================
+   画面切り替え
+========================= */
+function show(id){$$("main>section").forEach(s=>s.classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
+
+/* =========================
+   テキスト（URL自動リンク＋改行）
+========================= */
+const Text={
   autoLinkAndBreaks(text){
     const safe=document.createElement('div'); safe.textContent=text||'';
     let s=safe.textContent;
@@ -369,24 +370,93 @@ const Text = {
   }
 };
 
-/* ---------- アプリ状態 ---------- */
+/* =========================
+   状態
+========================= */
 let state={ me:null, shops:[], chosenShop:null, menu:[], cart:[] };
 
-/* ---------- ログイン ---------- */
+/* =========================
+   公開ビュー：営業情報＋新着情報
+========================= */
+async function loadPublicOverview(force=false){
+  // ラベル
+  const today=new Date();
+  const dates=[0,1,2].map(n=>new Date(today.getFullYear(),today.getMonth(),today.getDate()+n));
+  ['day0-label','day1-label','day2-label'].forEach((id,i)=>{
+    const d=dates[i]; const wd=['日','月','火','水','木','金','土'][d.getDay()];
+    const el=document.getElementById(id); if(el) el.textContent=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）`;
+  });
+
+  // キャッシュ即時描画（60秒）
+  const cOverview=cache.get('public_overview',60);
+  if(cOverview) renderOverview(cOverview);
+  const cNews=cache.get('latest_news',60);
+  if(cNews) renderNews(cNews);
+
+  // ネット取得（ボタン時はforce=trueで必ず最新）
+  try{
+    const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0});
+    cache.set('public_overview',d); renderOverview(d);
+  }catch(e){ /* サイレント */ }
+  try{
+    const n=await api('latest_messages_all','GET',null,{withLoader:false,timeoutMs:6000,retries:0});
+    cache.set('latest_news',n); renderNews(n);
+  }catch(e){ /* サイレント */ }
+}
+
+function renderOverview(d){
+  const rows=$("#status-rows"); if(!rows) return; rows.innerHTML='';
+  if(!(d&&d.shops&&d.shops.length)){ $("#status-empty").style.display='block'; return; }
+  $("#status-empty").style.display='none';
+  d.shops.forEach(s=>{
+    const div=document.createElement('div'); div.className='status-row';
+    div.innerHTML=`<div class="shop-chip"><span class="shop-avatar">${(s.shop_name||'?').slice(0,1)}</span> ${s.shop_name}</div>${(s.days||[]).map(x=>`<div class="${x.open?'badge-ok':'badge-ng'}">${x.open?'◯':'×'}</div>`).join('')}`;
+    rows.appendChild(div);
+  });
+}
+
+async function renderNews(n){
+  const list=$("#news-list"); if(!list) return; list.innerHTML='';
+  if(!(n&&n.news&&n.news.length)){ $("#news-empty").style.display='block'; return; }
+  $("#news-empty").style.display='none';
+  for(const item of n.news){
+    const d=item.updated_at?new Date(item.updated_at):null;
+    const ymd=d?`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${['日','月','火','水','木','金','土'][d.getDay()]}）`:'';
+    const row=document.createElement('div'); row.className='news-item';
+    row.innerHTML=`
+      <div class="shop-avatar">${(item.shop_name||'?').slice(0,1)}</div>
+      <div style="flex:1">
+        <div class="news-title">${item.shop_name} — ${item.title || '(タイトル未設定)'}</div>
+        <div class="news-date" style="margin:4px 0 6px 0">${ymd}</div>
+        <div class="notice-body"></div>
+      </div>
+    `;
+    const bodyEl=row.querySelector('.notice-body');
+    try{
+      const res=await api('messages','GET',{shop_id:item.shop_id},{withLoader:false,timeoutMs:5000,retries:0});
+      const first=(res.ok && res.list && res.list[0])?res.list[0]:null;
+      bodyEl.innerHTML=first ? Text.autoLinkAndBreaks(first.body||'') : '（本文はありません）';
+    }catch(e){ bodyEl.innerHTML='（本文の取得に失敗しました）'; }
+    bodyEl.style.display='block';
+    list.appendChild(row);
+  }
+}
+
+/* =========================
+   ログイン
+========================= */
 async function doLogin(){
   const id=$("#login-id").value.trim(), pass=$("#login-pass").value.trim(), err=$("#login-error");
   err.textContent="";
   if(!id){err.textContent="IDを入力してください";return}
   if(!/^\d{4}$/.test(pass)){err.textContent="パスワードは4桁の数字です";return}
   try{
-    const d=await api("login","POST",{id,password:pass});
+    const d=await api("login","POST",{id,password:pass},{timeoutMs:7000,retries:1});
     if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
     store.set("token",d.token); store.set("user",d.user);
     state.me=d.user;
-    if(/^s\d+/i.test(state.me.id)){ // ベンダーログイン
-      await loadVendorSummary();
-      await VendorMessages.load();
-      await ClosedDays.load();
+    if(/^s\d+/i.test(state.me.id)){ // ベンダー
+      await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]);
       setDefaultVisibleUntil();
       show("view-vendor");
     } else { // 生徒
@@ -397,9 +467,12 @@ async function doLogin(){
   }catch(e){err.textContent="通信エラー："+e.message}
 }
 
-/* ---------- 生徒：ダッシュボード ---------- */
+/* =========================
+   生徒：ダッシュボード
+========================= */
 async function loadDashboard(){
-  const d=await api("dashboard","GET"); state.shops=d.shops||[];
+  const d=await api("dashboard","GET",null,{timeoutMs:7000,retries:1});
+  state.shops=d.shops||[];
 
   // 店リスト（カード）
   const box=$("#shop-cards"); box.innerHTML="";
@@ -410,7 +483,7 @@ async function loadDashboard(){
     box.appendChild(div);
   }
 
-  // 履歴（最新5件・カード）
+  // 履歴（最新5件）
   const list=$("#history-list"); list.innerHTML="";
   const hist=(d.history||[]).slice(0,5);
   for(const h of hist){
@@ -436,7 +509,7 @@ async function loadDashboard(){
       btn.onclick=async()=>{
         if(!confirm('この注文を取り消します。よろしいですか？')) return;
         try{
-          const res=await api('cancel_order','POST',{order_id:h.order_id});
+          const res=await api('cancel_order','POST',{order_id:h.order_id},{timeoutMs:7000,retries:0});
           if(res.ok){ card.remove(); } else { alert(res.error||'取消に失敗しました'); }
         }catch(e){ alert('通信エラー：'+e.message); }
       };
@@ -447,30 +520,52 @@ async function loadDashboard(){
   $("#btn-logout").onclick=doLogout;
 }
 
-/* ---------- 生徒：メニュー遷移 ---------- */
+/* =========================
+   生徒：メニュー遷移（並列＋キャッシュ）
+========================= */
 async function enterMenu(){
   const sid=state.chosenShop.shop_id;
   $("#shop-title").textContent=state.chosenShop.shop_name;
 
+  // 直近キャッシュ即時表示（5分）
+  const cacheKeyMsg=`msg_${sid}`;
+  const cacheKeyMenu=`menu_${sid}`;
+  const cMsg=cache.get(cacheKeyMsg,300);
+  const cMenu=cache.get(cacheKeyMenu,300);
+  if(cMsg) renderShopMessages(cMsg);
+  if(cMenu){ state.menu=cMenu; renderMenu(); }
+
   showLoading(true);
   try{
-    await loadShopMessages(sid);
-    const d=await api("menu","GET");
-    state.menu=(d.menu||[]).filter(m=>String(m.shop_id)===String(sid)&&String(m.enabled)!=='FALSE');
-    renderMenu(); state.cart=[]; renderCart(); show("view-menu");
+    // 並列取得（サーバがshop_id対応していなくても前端でfilterするので安全）
+    const [msgRes, menuRes] = await Promise.all([
+      api('messages','GET',{shop_id:sid},{withLoader:false,timeoutMs:7000,retries:0}),
+      api('menu','GET',{shop_id:sid},{withLoader:false,timeoutMs:7000,retries:0})
+    ]);
+
+    // お知らせ
+    const list = msgRes.ok ? (msgRes.list||[]) : [];
+    renderShopMessages(list);
+    cache.set(cacheKeyMsg, list);
+
+    // メニュー
+    const menuAll = (menuRes.menu||[]);
+    state.menu = menuAll.filter(m=>String(m.shop_id)===String(sid) && String(m.enabled)!=='FALSE');
+    renderMenu();
+    cache.set(cacheKeyMenu, state.menu);
+
+    // カート初期化＆表示
+    state.cart=[]; renderCart();
+    show("view-menu");
   } finally { showLoading(false); }
 }
 
-// 生徒向けお知らせ（最新は開いた状態）
-async function loadShopMessages(shop_id){
-  const res=await api('messages','GET',{shop_id});
-  const list=res.ok?(res.list||[]):[];
-  const wrap=$('#notice-list'); wrap.innerHTML='';
-  const empty=$('#notice-empty'); const card=$('#notice-card');
-
+function renderShopMessages(list){
+  const wrap=$('#notice-list'); const empty=$('#notice-empty'); const card=$('#notice-card');
+  if(!wrap||!empty||!card) return;
+  wrap.innerHTML='';
   if(!list.length){ empty.style.display='block'; card.classList.add('hidden'); return; }
   empty.style.display='none'; card.classList.remove('hidden');
-
   list.forEach((m,idx)=>{
     const item=document.createElement('div'); item.className='item notice-item';
     const d=m.updated_at?new Date(m.updated_at):null;
@@ -492,7 +587,9 @@ async function loadShopMessages(shop_id){
   });
 }
 
-/* ---------- 生徒：メニュー/カート/注文 ---------- */
+/* =========================
+   生徒：メニュー/カート/注文
+========================= */
 function renderMenu(){
   const box=$("#menu-cards"); box.innerHTML="";
   if(!state.menu.length){
@@ -523,7 +620,7 @@ async function doOrder(){
   if(!state.cart.length){alert("商品を追加してください");return}
   const payload={shop_id:state.chosenShop.shop_id,items:state.cart};
   try{
-    const res=await api("order","POST",payload);
+    const res=await api("order","POST",payload,{timeoutMs:8000,retries:0});
     if(res.ok){
       const counts=res.items.reduce((a,x)=>(a[x.item]=(a[x.item]||0)+1,a),{});
       const lines=Object.entries(counts).map(([name,c])=>`・${name} × ${c}点`).join("<br>");
@@ -533,9 +630,11 @@ async function doOrder(){
   }catch(e){ alert("通信エラー："+e.message); }
 }
 
-/* ---------- 店：サマリ ---------- */
+/* =========================
+   店：サマリ
+========================= */
 async function loadVendorSummary(){
-  const d=await api("vendor_summary","GET");
+  const d=await api("vendor_summary","GET",null,{timeoutMs:8000,retries:0});
   const uid=(store.get('user')||{}).id?.toUpperCase()||'';
   $("#vendor-title").textContent=`${d.title_label||'受注状況'}（${uid}）`;
   $("#vendor-sub").textContent=d.sub_label||'—';
@@ -564,12 +663,14 @@ async function loadVendorSummary(){
   }
 }
 
-/* ---------- 店：お知らせ ---------- */
+/* =========================
+   店：お知らせ
+========================= */
 const VendorMessages={
   list:[],
   async load(){
     const uid=(store.get('user')||{}).id?.toUpperCase()||''; if(!uid) return;
-    const res=await api('messages','GET',{shop_id:uid});
+    const res=await api('messages','GET',{shop_id:uid},{timeoutMs:7000,retries:0});
     this.list=res.ok?(res.list||[]):[];
     this.render(); $('#msg-status').textContent='';
   },
@@ -601,7 +702,7 @@ const VendorMessages={
     const vu=$('#msg-visible-until').value;
     const enabled=$('#msg-enabled').checked;
     if(!title||!body){ $('#msg-status').textContent='タイトルと内容は必須です。'; return; }
-    const res=await api('save_message','POST',{title,body,visible_until:vu||'',enabled});
+    const res=await api('save_message','POST',{title,body,visible_until:vu||'',enabled},{timeoutMs:8000,retries:0});
     if(res.ok){
       $('#msg-status').textContent='保存しました。生徒画面は再読込で即反映されます。';
       $('#msg-title').value=''; $('#msg-body').value=''; setDefaultVisibleUntil(); $('#msg-enabled').checked=true;
@@ -610,12 +711,14 @@ const VendorMessages={
   }
 };
 
-/* ---------- 店：定休日 ---------- */
+/* =========================
+   店：定休日
+========================= */
 const ClosedDays={
   selected:new Set(),
   monthKeys:[],
   async load(){
-    const d=await api('closed_days','GET');
+    const d=await api('closed_days','GET',null,{timeoutMs:7000,retries:0});
     this.selected=new Set(d.days||[]); this.render(); $('#closed-msg').textContent='';
   },
   initMonths(){
@@ -654,12 +757,14 @@ const ClosedDays={
   },
   async save(){
     const body={dates:Array.from(this.selected).sort()};
-    const res=await api('save_closed_days','POST',body);
+    const res=await api('save_closed_days','POST',body,{timeoutMs:8000,retries:0});
     $('#closed-msg').textContent = res.ok ? '保存しました（当月＋翌月を上書き）。' : (res.error||'保存に失敗しました');
   }
 };
 
-/* ---------- 共通 ---------- */
+/* =========================
+   共通
+========================= */
 function setDefaultVisibleUntil(){
   const el=document.getElementById('msg-visible-until'); if(!el) return;
   const d=new Date(); d.setDate(d.getDate()+14);
@@ -673,7 +778,9 @@ function doLogout(){
   show("view-login"); loadPublicOverview(); // ログアウト時も表示更新
 }
 
-/* ---------- イベント ---------- */
+/* =========================
+   起動時イベント
+========================= */
 $("#app-version").textContent=APP_VERSION;
 $("#btn-login").onclick=doLogin;
 $("#btn-back-shop").onclick=()=> show("view-shop");
@@ -681,7 +788,7 @@ $("#btn-finish").onclick=doLogout;
 $("#btn-logout").onclick=doLogout;
 
 // ベンダー
-$("#btn-vendor-refresh").onclick=async()=>{ await loadVendorSummary(); await VendorMessages.load(); await ClosedDays.load(); setDefaultVisibleUntil(); };
+$("#btn-vendor-refresh").onclick=async()=>{ await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]); setDefaultVisibleUntil(); };
 $("#btn-vendor-logout").onclick=doLogout;
 $("#btn-closed-refresh").onclick=()=> ClosedDays.load();
 $("#btn-closed-save").onclick=()=> ClosedDays.save();
@@ -689,17 +796,20 @@ $("#btn-msg-refresh").onclick=()=> VendorMessages.load();
 $("#btn-msg-save").onclick=()=> VendorMessages.save();
 
 // ログイン画面の公開情報 更新ボタン
-$("#btn-public-refresh").onclick=()=> loadPublicOverview();
-$("#btn-news-refresh").onclick=()=> loadPublicOverview();
+$("#btn-public-refresh").onclick=()=> loadPublicOverview(true);
+$("#btn-news-refresh").onclick=()=> loadPublicOverview(true);
 
-/* ---------- 起動時復元 ---------- */
+/* =========================
+   初期化
+========================= */
 (async()=>{
   loadPublicOverview(); // 未ログインでも表示
   const token=store.get("token"); const user=store.get("user");
   if(token&&user){
     state.me=user;
     if(/^s\d+$/i.test(user.id)){
-      await loadVendorSummary(); await VendorMessages.load(); await ClosedDays.load(); setDefaultVisibleUntil();
+      await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]);
+      setDefaultVisibleUntil();
       show("view-vendor");
     }else{
       $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
