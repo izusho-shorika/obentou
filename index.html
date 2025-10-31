@@ -55,7 +55,14 @@
     .notice-title{font-weight:700;cursor:pointer}
     .notice-body{margin-top:6px;font-size:14px;line-height:1.6;display:none;white-space:pre-wrap}
     .notice-item{border-left:4px solid #e6f0ff;padding-left:8px}
-    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:11px;margin-left:6px}
+
+    /* ★ ベンダーお知らせオプション行のレスポンシブ */
+    .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .row-wrap > label{display:flex;gap:6px;align-items:center}
+    .row-wrap > label > input[type="date"]{width:auto}
+    @media (max-width:640px){
+      .row-wrap > label{flex:1 1 180px}
+    }
   </style>
 </head>
 <body>
@@ -82,7 +89,7 @@
         <div id="shop-cards" class="list"></div>
       </div>
       <div class="card">
-        <h3 style="margin-top:0">最近の注文（最新20件）</h3>
+        <h3 style="margin-top:0">最近の注文（最新5件）</h3>
         <div id="history-list" class="list"></div>
       </div>
       <div class="footer-actions row"><button class="ghost" id="btn-logout">ログアウト</button></div>
@@ -90,7 +97,7 @@
 
     <!-- メニュー（生徒） -->
     <section id="view-menu" class="hidden">
-      <!-- NEW: お店からのお知らせ -->
+      <!-- お店からのお知らせ -->
       <div id="notice-card" class="card hidden">
         <h3 style="margin-top:0">お店からのお知らせ</h3>
         <div id="notice-list" class="list"></div>
@@ -162,19 +169,21 @@
         <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">注文がありません。</p>
       </div>
 
-      <!-- NEW: お店からのお知らせ（入力＆最新3件） -->
+      <!-- お店からのお知らせ（入力＆最新3件） -->
       <div class="card">
         <h3 style="margin:0">お店からのお知らせ（投稿）</h3>
         <p class="muted" style="margin:6px 0 8px 0">プレーンテキスト＋改行のみ（URLは自動リンクされます）</p>
         <input id="msg-title" placeholder="タイトル">
         <textarea id="msg-body" placeholder="内容（プレーンテキスト、改行可）"></textarea>
-        <div class="row" style="gap:12px">
-          <label class="row" style="gap:6px;width:auto"><input type="checkbox" id="msg-pinned"> ピン留め</label>
-          <label class="row" style="gap:6px;width:auto">表示期限（任意）
-            <input type="date" id="msg-visible-until" style="width:auto">
+
+        <!-- ★ ピン留め削除、表示期限＆有効のみ／レスポンシブ -->
+        <div class="row-wrap" style="margin-top:2px">
+          <label>表示期限（任意）
+            <input type="date" id="msg-visible-until">
           </label>
-          <label class="row" style="gap:6px;width:auto"><input type="checkbox" id="msg-enabled" checked> 有効</label>
+          <label><input type="checkbox" id="msg-enabled" checked> 有効</label>
         </div>
+
         <div class="row" style="margin-top:8px">
           <button class="ghost" id="btn-msg-refresh" style="width:auto">再読込</button>
           <button id="btn-msg-save" style="width:auto">保存</button>
@@ -208,8 +217,8 @@
   <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
   <script>
-    const APP_VERSION="v2.2.0";
-    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbw2OZ0TlHmNZqnhz3qx66ru84Go3XCZFWjFR931YjpPn8bs8zyJk_nsgVuDaneylI2t/exec"; // ← あなたのGASデプロイURL
+    const APP_VERSION="v2.2.1";
+    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycby9xwIPN96ICFF9Bvifv3yhaa5ROmSepigmQMRXORG15HeBXDShSVq08osjsW7_HDEEPA/exec"; // ← あなたのGASウェブアプリURL（/exec）に差し替え
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
     const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`};
@@ -222,30 +231,32 @@
       const u=new URL(ENDPOINT_URL);u.searchParams.set("fn",fn);
       try{
         let r;
-        if(method==="GET"){ if(token)u.searchParams.set("token",token); if(body && body.shop_id) u.searchParams.set("shop_id",body.shop_id); r=await fetch(u); }
-        else{
+        if(method==="GET"){
+          if(token)u.searchParams.set("token",token);
+          if(body && body.shop_id) u.searchParams.set("shop_id",body.shop_id);
+          r=await fetch(u);
+        }else{
           const f=new URLSearchParams();
           if(body) for(const[k,v] of Object.entries(body)) f.append(k, typeof v==="object"?JSON.stringify(v):String(v));
           if(token) f.append("token",token);
-          r=await fetch(u,{method:"POST",body:f});
+          r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:f});
         }
-        if(!r.ok) throw new Error(r.status);
-        return await r.json();
+        const text = await r.text();
+        if(!r.ok){ throw new Error(`${r.status} ${r.statusText} - ${text.slice(0,120)}`); }
+        return JSON.parse(text);
       } finally { showLoading(false); }
     }
 
     let state={ me:null, shops:[], chosenShop:null, menu:[], cart:[] };
 
-    /* ---------- 共通：テキストを安全に表示（URL自動リンク＋改行） ---------- */
+    /* ---------- テキスト（URL自動リンク＋改行） ---------- */
     const Text = {
       autoLinkAndBreaks(text){
         const safe = document.createElement('div');
         safe.textContent = text || '';
         let s = safe.textContent;
-        // URL自動リンク
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         s = s.replace(urlRegex, (m)=>`<a href="${m}" target="_blank" rel="noopener noreferrer">${m}</a>`);
-        // 改行
         s = s.replace(/\n/g,'<br>');
         return s;
       }
@@ -262,8 +273,17 @@
         if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
         store.set("token",d.token);store.set("user",d.user);
         state.me=d.user;
-        if(/^s\d+/i.test(state.me.id)){await loadVendorSummary();await VendorMessages.load();show("view-vendor")}
-        else{$("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;await loadDashboard();show("view-shop")}
+        if(/^s\d+/i.test(state.me.id)){
+          await loadVendorSummary();
+          await VendorMessages.load();
+          await ClosedDays.load();
+          setDefaultVisibleUntil();      // ★ 2週間後を初期セット
+          show("view-vendor");
+        } else {
+          $("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;
+          await loadDashboard();
+          show("view-shop");
+        }
       }catch(e){err.textContent="通信エラー："+e.message}
     }
 
@@ -278,7 +298,7 @@
         div.onclick=()=>{state.chosenShop=s;enterMenu()};
         box.appendChild(div);
       }
-      // 履歴（取消済みはサーバで除外済み／未確定のみ取消可）
+      // 履歴（最新5件）
       const list=$("#history-list");list.innerHTML="";
       for(const h of (d.history||[])){
         const card=document.createElement("div");
@@ -298,21 +318,14 @@
             </div>
           </div>
         `;
-        // 取消ボタン
         const btn = card.querySelector('.btn-cancel');
         if(btn){
           btn.onclick = async ()=>{
             if(!confirm('この注文を取り消します。よろしいですか？')) return;
             try{
               const res = await api('cancel_order','POST',{order_id: h.order_id});
-              if(res.ok){
-                card.remove(); // 一覧から削除
-              }else{
-                alert(res.error || '取消に失敗しました');
-              }
-            }catch(e){
-              alert('通信エラー：'+e.message);
-            }
+              if(res.ok){ card.remove(); } else { alert(res.error || '取消に失敗しました'); }
+            }catch(e){ alert('通信エラー：'+e.message); }
           };
         }
         list.appendChild(card);
@@ -334,7 +347,7 @@
       renderMenu(); state.cart=[]; renderCart(); show("view-menu");
     }
 
-    // NEW: 生徒向け お知らせ表示
+    // 生徒向け お知らせ表示（最新は開いた状態）
     async function loadShopMessages(shop_id){
       const res = await api('messages','GET',{shop_id});
       const list = res.ok ? (res.list||[]) : [];
@@ -344,13 +357,13 @@
 
       if(!list.length){
         empty.style.display='block';
-        card.classList.add('hidden'); // 空なら非表示
+        card.classList.add('hidden');
         return;
       }
       empty.style.display='none';
       card.classList.remove('hidden');
 
-      list.forEach(m=>{
+      list.forEach((m, idx)=>{
         const item = document.createElement('div');
         item.className = 'item notice-item';
         const dateLabel = m.updated_at ? new Date(m.updated_at) : null;
@@ -361,11 +374,13 @@
             <div class="notice-title">${m.title || '(無題)'}</div>
             <div class="muted">${ymd}</div>
           </div>
-          ${m.pinned ? '<div class="pill">PIN</div>' : ''}
           <div class="notice-body"></div>
         `;
         const body = item.querySelector('.notice-body');
         body.innerHTML = Text.autoLinkAndBreaks(m.body||'');
+
+        // ★ 最新（先頭）の1件だけデフォルトで展開
+        if(idx === 0) body.style.display = 'block';
 
         const titleEl = item.querySelector('.notice-title');
         titleEl.onclick = ()=>{ body.style.display = (body.style.display==='none'||body.style.display==='') ? 'block' : 'none'; };
@@ -379,10 +394,7 @@
       for(const m of state.menu){
         const div=document.createElement("div");div.className="item center";
         div.innerHTML=`<h4>${m.item}</h4><div class="price">${fmtYen(m.price)}</div>`;
-        div.onclick=()=>{ // item_id も送る（UI変更なし）
-          state.cart.push({ item_id:String(m.item_id||''), item:m.item, unit_price:Number(m.price) });
-          renderCart();
-        };
+        div.onclick=()=>{ state.cart.push({ item_id:String(m.item_id||''), item:m.item, unit_price:Number(m.price) }); renderCart(); };
         box.appendChild(div);
       }
     }
@@ -489,39 +501,6 @@
       }
     };
 
-    /* ---------- 店側：提供日ベース集計 ---------- */
-    async function loadVendorSummary(){
-      const d = await api("vendor_summary","GET");
-      const uid = (store.get('user')||{}).id?.toUpperCase() || '';
-      $("#vendor-title").textContent = `${d.title_label || '受注状況'}（${uid}）`;
-      $("#vendor-sub").textContent   = d.sub_label || '—';
-
-      $("#kpi-qty").textContent = String(d.total_qty || 0);
-      $("#kpi-amount").textContent = fmtYen(d.total_amount || 0);
-
-      const by=$("#vendor-byitem"); by.innerHTML="";
-      if(!(d.by_item||[]).length){ $("#vendor-byitem-empty").style.display='block'; }
-      else{
-        $("#vendor-byitem-empty").style.display='none';
-        for(const r of d.by_item){
-          const tr=document.createElement("tr");
-          tr.innerHTML=`<td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`;
-          by.appendChild(tr);
-        }
-      }
-
-      const rows=$("#vendor-rows"); rows.innerHTML="";
-      if(!(d.rows||[]).length){ $("#vendor-rows-empty").style.display='block'; }
-      else{
-        $("#vendor-rows-empty").style.display='none';
-        for(const r of d.rows){
-          const tr=document.createElement("tr");
-          tr.innerHTML=`<td>${r.user_id}</td><td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`;
-          rows.appendChild(tr);
-        }
-      }
-    }
-
     /* ---------- 店側：お知らせ ---------- */
     const VendorMessages = {
       list: [],
@@ -550,7 +529,6 @@
               <div class="notice-title">${m.title || '(無題)'}</div>
               <div class="muted">${ymd}</div>
             </div>
-            ${m.pinned ? '<div class="pill">PIN</div>' : ''}
             <div class="notice-body"></div>
           `;
           const body = item.querySelector('.notice-body');
@@ -563,8 +541,7 @@
       async save(){
         const title = $('#msg-title').value.trim();
         const body  = $('#msg-body').value.trim();
-        const pinned = $('#msg-pinned').checked;
-        const vu = $('#msg-visible-until').value; // yyyy-mm-dd or ''
+        const vu = $('#msg-visible-until').value;
         const enabled = $('#msg-enabled').checked;
 
         if(!title || !body){
@@ -572,13 +549,15 @@
           return;
         }
         const res = await api('save_message','POST',{
-          title, body, pinned,
+          title, body,
           visible_until: vu || '',
           enabled
         });
         if(res.ok){
           $('#msg-status').textContent = '保存しました。生徒画面は再読込で即反映されます。';
-          $('#msg-title').value=''; $('#msg-body').value=''; $('#msg-pinned').checked=false; $('#msg-visible-until').value=''; $('#msg-enabled').checked=true;
+          $('#msg-title').value=''; $('#msg-body').value='';
+          setDefaultVisibleUntil(); // ★ 保存後も2週間後を再セット
+          $('#msg-enabled').checked=true;
           await this.load();
         }else{
           $('#msg-status').textContent = res.error || '保存に失敗しました。';
@@ -587,6 +566,17 @@
     };
 
     /* ---------- 共通 ---------- */
+    function setDefaultVisibleUntil(){
+      const el = document.getElementById('msg-visible-until');
+      if(!el) return;
+      const d = new Date();
+      d.setDate(d.getDate() + 14); // 2週間後
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      el.value = `${yyyy}-${mm}-${dd}`;
+    }
+
     function doLogout(){
       store.del("token"); store.del("user");
       state={me:null, shops:[], chosenShop:null, menu:[], cart:[]};
@@ -600,12 +590,15 @@
     $("#btn-back-shop").onclick=()=> show("view-shop");
     $("#btn-finish").onclick=doLogout;
     $("#btn-logout").onclick=doLogout;
-    $("#btn-vendor-refresh").onclick=async()=>{ await loadVendorSummary(); await VendorMessages.load(); };
+    $("#btn-vendor-refresh").onclick=async()=>{
+      await loadVendorSummary();
+      await VendorMessages.load();
+      await ClosedDays.load();
+      setDefaultVisibleUntil(); // ★ 常に初期化
+    };
     $("#btn-vendor-logout").onclick=doLogout;
     $("#btn-closed-refresh").onclick = ()=> ClosedDays.load();
     $("#btn-closed-save").onclick = ()=> ClosedDays.save();
-
-    // NEW: ベンダー側お知らせボタン
     $("#btn-msg-refresh").onclick = ()=> VendorMessages.load();
     $("#btn-msg-save").onclick = ()=> VendorMessages.save();
 
@@ -614,9 +607,20 @@
       const token=store.get("token"); const user=store.get("user");
       if(token&&user){
         state.me=user;
-        if(/^s\d+$/i.test(user.id)){ await loadVendorSummary(); await VendorMessages.load(); await ClosedDays.load(); show("view-vendor"); }
-        else{ $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`; await loadDashboard(); show("view-shop"); }
-      }else{ show("view-login"); }
+        if(/^s\d+$/i.test(user.id)){
+          await loadVendorSummary();
+          await VendorMessages.load();
+          await ClosedDays.load();
+          setDefaultVisibleUntil();      // ★ 初期値
+          show("view-vendor");
+        }else{
+          $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
+          await loadDashboard();
+          show("view-shop");
+        }
+      }else{
+        show("view-login");
+      }
     })();
   </script>
 </body>
