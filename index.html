@@ -209,7 +209,7 @@
 
   <script>
     const APP_VERSION="v2.2.0";
-    const ENDPOINT_URL="hhttps://script.google.com/macros/s/AKfycbwUu4oKEbWMzyiuqh_cHzr61Ge-Hc1aoo-ewHROgJ8kDc8n7lHnlRZeYdUO5gBcXYW7zQ/exec"; // ← あなたのGASデプロイURL
+    const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbw2OZ0TlHmNZqnhz3qx66ru84Go3XCZFWjFR931YjpPn8bs8zyJk_nsgVuDaneylI2t/exec"; // ← あなたのGASデプロイURL
     const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
     const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
     const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`};
