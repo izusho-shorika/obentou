@@ -330,7 +330,7 @@
 /* =========================
    基本情報
 ========================= */
-const APP_VERSION="v2.5.3";
+const APP_VERSION="v2.5.4";
 const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxZ55o2oKZUFKDJBk8Y_uJLT1Tj9YSYRVN8Ss0HwVu9ICAnCjyuqvIlVlyzFzKZMFyIFQ/exec"; // ← あなたのGAS /exec に差し替え
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
@@ -982,5 +982,103 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
   }
 })();
 </script>
+
+<script>
+/* ====== 安定化パッチ（API/ログイン/起動） ====== */
+(function(){
+  if(!window.NET){
+    window.NET={ BASE_TIMEOUT:10000, MAX_RETRIES:2, BACKOFF_MS:1200 };
+  }
+  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+  async function fetchWithTimeout(input, init, timeoutMs){
+    const ctrl = new AbortController();
+    const id = setTimeout(()=>ctrl.abort(), timeoutMs);
+    try{ return await fetch(input, {...(init||{}), signal: ctrl.signal}); }
+    finally{ clearTimeout(id); }
+  }
+  // apiCore 上書き
+  window.apiCore = async function apiCore(fn,method="GET",body=null){
+    const token = window.store?.get ? store.get("token") : null;
+    const u = new URL(window.ENDPOINT_URL); u.searchParams.set("fn",fn);
+    let init = {};
+    if(method==="GET"){
+      if(token) u.searchParams.set("token",token);
+      if(body) Object.entries(body).forEach(([k,v])=> u.searchParams.set(k, typeof v==="object"?JSON.stringify(v):String(v)));
+    }else{
+      const f = new URLSearchParams();
+      if(body) for(const [k,v] of Object.entries(body)) f.append(k, typeof v==="object"?JSON.stringify(v):String(v));
+      if(token) f.append("token",token);
+      init = { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"}, body:f };
+    }
+    const tmo = (apiCore.prototype && apiCore.prototype.timeoutMs) || (window.NET?.BASE_TIMEOUT||10000);
+    const res = await fetchWithTimeout(u, init, tmo);
+    const text = await res.text();
+    if(!res.ok){ throw new Error(`${res.status} ${res.statusText} - ${text.slice(0,120)}`); }
+    return JSON.parse(text || "{}");
+  };
+  // api 上書き
+  window.api = async function api(fn,method="GET",body=null,{timeoutMs=NET.BASE_TIMEOUT,retries=NET.MAX_RETRIES,withLoader=true}={}){
+    if(typeof window.showLoading==="function" && withLoader) showLoading(true);
+    try{
+      for(let attempt=0; attempt<=retries; attempt++){
+        const tmo = timeoutMs * Math.pow(3, attempt);
+        try{
+          apiCore.prototype.timeoutMs = tmo;
+          return await apiCore(fn,method,body);
+        }catch(e){
+          if(attempt===retries) throw e;
+          await sleep(NET.BACKOFF_MS*(attempt+1));
+        }
+      }
+    } finally {
+      if(typeof window.showLoading==="function" && withLoader) showLoading(false);
+    }
+  };
+  // doLogin の生徒分岐だけ安全に上書き（既存doLogin呼び出し後に完全読込→表示で上書き）
+  const origDoLogin = window.doLogin;
+  window.doLogin = async function doLoginPatched(){
+    if(!origDoLogin){
+      console.warn("doLogin未定義：既存実装に依存しないパッチはスキップ");
+      return;
+    }
+    try{ await origDoLogin(); }catch(e){}
+    const user = window.store?.get ? store.get("user") : null;
+    if(user && user.role!=="vendor"){
+      try{
+        if(typeof showLoading==="function") showLoading(true);
+        await Promise.all([
+          window.loadDashboard ? loadDashboard() : Promise.resolve(),
+          window.loadPublicOverviewAuth ? loadPublicOverviewAuth() : Promise.resolve()
+        ]);
+        const wm = document.querySelector("#welcome-message");
+        if(wm) wm.textContent = `ようこそ、${user.name||user.id}さん`;
+        if(typeof show==="function") show("view-shop");
+      } finally {
+        if(typeof showLoading==="function") showLoading(false);
+      }
+    }
+  };
+  // 起動時の自動ログイン済みフローを上書き（生徒のみ完全読込→表示）
+  document.addEventListener("DOMContentLoaded", async ()=>{
+    const token = window.store?.get ? store.get("token") : null;
+    const user  = window.store?.get ? store.get("user")  : null;
+    if(!token || !user) return;
+    if(user.role==="vendor") return;
+    try{
+      if(typeof showLoading==="function") showLoading(true);
+      await Promise.all([
+        window.loadDashboard ? loadDashboard() : Promise.resolve(),
+        window.loadPublicOverviewAuth ? loadPublicOverviewAuth() : Promise.resolve()
+      ]);
+      const wm = document.querySelector("#welcome-message");
+      if(wm) wm.textContent = `ようこそ、${user.name||user.id}さん`;
+      if(typeof show==="function") show("view-shop");
+    } finally {
+      if(typeof showLoading==="function") showLoading(false);
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
