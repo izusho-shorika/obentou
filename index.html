@@ -981,68 +981,77 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     show("view-login");
   }
 })();
-</script>
 
-<script>
-/* ====== 安定化パッチ（API/ログイン/起動） ====== */
+/* ====== 安定化パッチ（apiを引数渡し方式に修正） ====== */
 (function(){
-  if(!window.NET){
-    window.NET={ BASE_TIMEOUT:10000, MAX_RETRIES:2, BACKOFF_MS:1200 };
-  }
+  // 既存NETがなければ定義
+  window.NET = window.NET || { BASE_TIMEOUT: 10000, MAX_RETRIES: 2, BACKOFF_MS: 1200 };
+
   function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
   async function fetchWithTimeout(input, init, timeoutMs){
     const ctrl = new AbortController();
     const id = setTimeout(()=>ctrl.abort(), timeoutMs);
     try{ return await fetch(input, {...(init||{}), signal: ctrl.signal}); }
     finally{ clearTimeout(id); }
   }
-  // apiCore 上書き
-  window.apiCore = async function apiCore(fn,method="GET",body=null){
-    const token = window.store?.get ? store.get("token") : null;
-    const u = new URL(window.ENDPOINT_URL); u.searchParams.set("fn",fn);
+
+  // ★ apiCore: タイムアウトは引数 tmo で受け取る
+  window.apiCore = async function apiCore(fn, method="GET", body=null, tmo){
+    // 既存のENDPOINT_URL / store を利用
+    const token = window.store && typeof store.get==="function" ? store.get("token") : null;
+    const u = new URL(window.ENDPOINT_URL); u.searchParams.set("fn", fn);
+
     let init = {};
-    if(method==="GET"){
-      if(token) u.searchParams.set("token",token);
-      if(body) Object.entries(body).forEach(([k,v])=> u.searchParams.set(k, typeof v==="object"?JSON.stringify(v):String(v)));
+    if(method === "GET"){
+      if(token) u.searchParams.set("token", token);
+      if(body) Object.entries(body).forEach(([k,v])=>{
+        u.searchParams.set(k, typeof v==="object" ? JSON.stringify(v) : String(v));
+      });
     }else{
       const f = new URLSearchParams();
-      if(body) for(const [k,v] of Object.entries(body)) f.append(k, typeof v==="object"?JSON.stringify(v):String(v));
-      if(token) f.append("token",token);
+      if(body) for(const [k,v] of Object.entries(body)){
+        f.append(k, typeof v==="object" ? JSON.stringify(v) : String(v));
+      }
+      if(token) f.append("token", token);
       init = { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"}, body:f };
     }
-    const tmo = (apiCore.prototype && apiCore.prototype.timeoutMs) || (window.NET?.BASE_TIMEOUT||10000);
-    const res = await fetchWithTimeout(u, init, tmo);
+
+    const timeout = (typeof tmo === "number" ? tmo : (window.NET?.BASE_TIMEOUT || 10000));
+    const res = await fetchWithTimeout(u, init, timeout);
     const text = await res.text();
     if(!res.ok){ throw new Error(`${res.status} ${res.statusText} - ${text.slice(0,120)}`); }
     return JSON.parse(text || "{}");
   };
-  // api 上書き
-  window.api = async function api(fn,method="GET",body=null,{timeoutMs=NET.BASE_TIMEOUT,retries=NET.MAX_RETRIES,withLoader=true}={}){
+
+  // ★ api: リトライのたびに tmo を引数で渡す（prototypeは使わない）
+  window.api = async function api(fn, method="GET", body=null, opts={}){
+    const timeoutMs = (opts && typeof opts.timeoutMs==="number") ? opts.timeoutMs : window.NET.BASE_TIMEOUT;
+    const retries   = (opts && typeof opts.retries==="number")   ? opts.retries   : window.NET.MAX_RETRIES;
+    const withLoader= (opts && "withLoader" in opts) ? !!opts.withLoader : true;
+
     if(typeof window.showLoading==="function" && withLoader) showLoading(true);
     try{
       for(let attempt=0; attempt<=retries; attempt++){
-        const tmo = timeoutMs * Math.pow(3, attempt);
+        const tmo = timeoutMs * Math.pow(3, attempt); // 10s→30s→90s
         try{
-          apiCore.prototype.timeoutMs = tmo;
-          return await apiCore(fn,method,body);
+          return await window.apiCore(fn, method, body, tmo);
         }catch(e){
-          if(attempt===retries) throw e;
-          await sleep(NET.BACKOFF_MS*(attempt+1));
+          if(attempt === retries) throw e;
+          await sleep(window.NET.BACKOFF_MS * (attempt+1));
         }
       }
     } finally {
       if(typeof window.showLoading==="function" && withLoader) showLoading(false);
     }
   };
-  // doLogin の生徒分岐だけ安全に上書き（既存doLogin呼び出し後に完全読込→表示で上書き）
+
+  // doLogin の“完全読込後に表示”はそのまま（既存doLoginを尊重して上書き）
   const origDoLogin = window.doLogin;
   window.doLogin = async function doLoginPatched(){
-    if(!origDoLogin){
-      console.warn("doLogin未定義：既存実装に依存しないパッチはスキップ");
-      return;
-    }
-    try{ await origDoLogin(); }catch(e){}
-    const user = window.store?.get ? store.get("user") : null;
+    if(!origDoLogin){ console.warn("doLogin未定義"); return; }
+    try{ await origDoLogin(); }catch(e){ /* 既存が処理 */ }
+    const user = window.store && typeof store.get==="function" ? store.get("user") : null;
     if(user && user.role!=="vendor"){
       try{
         if(typeof showLoading==="function") showLoading(true);
@@ -1058,12 +1067,13 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
       }
     }
   };
-  // 起動時の自動ログイン済みフローを上書き（生徒のみ完全読込→表示）
+
+  // 自動ログイン済みの初期表示も“完全読込後に表示”
   document.addEventListener("DOMContentLoaded", async ()=>{
-    const token = window.store?.get ? store.get("token") : null;
-    const user  = window.store?.get ? store.get("user")  : null;
+    const token = window.store && typeof store.get==="function" ? store.get("token") : null;
+    const user  = window.store && typeof store.get==="function" ? store.get("user")  : null;
     if(!token || !user) return;
-    if(user.role==="vendor") return;
+    if(user.role === "vendor") return;
     try{
       if(typeof showLoading==="function") showLoading(true);
       await Promise.all([
