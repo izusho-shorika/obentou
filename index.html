@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-  <title>出商お弁当注文アプリ</title>
+  <title>出雲市お弁当注文アプリ</title>
   <style>
     :root {
       --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666;
@@ -145,14 +145,14 @@
   </style>
 </head>
 <body>
-<header><h1>出商お弁当注文アプリ<span id="app-version" class="tag"></span></h1></header>
+<header><h1>出雲市お弁当注文アプリ<span id="app-version" class="tag"></span></h1></header>
 
 <main>
   <!-- ログイン -->
  <section id="view-login" class="card">
-  <h2 style="margin-top:0">ログイン</h2>
+  <h3 style="margin-top:0">ログイン</h3>
   <div style="padding-top:10px">
-    <input id="login-id" placeholder="ログインID（例：s20251101 / s01）">
+    <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
   </div>
   <div class="spacer"></div>
@@ -249,7 +249,7 @@
   <!-- 店側 -->
   <section id="view-vendor" class="hidden">
     <div class="card">
-      <h2 id="vendor-title" style="margin:0">受注状況</h2>
+      <h3 id="vendor-title" style="margin:0">受注状況</h3>
       <p class="muted" id="vendor-sub" style="margin:6px 0 0 0">—</p>
     </div>
 
