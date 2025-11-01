@@ -128,6 +128,20 @@
     #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
     #view-login .news-title{font-weight:700;line-height:1.5}
     #view-login .news-date{font-size:12px;color:#667085}
+  
+    /* --- 履歴カードをコンパクトに（view-shop内のみ） --- */
+#view-shop .history-compact .item{
+  padding:10px;
+}
+#view-shop .history-compact h4{
+  font-size:14px; margin:0;
+}
+#view-shop .history-compact .muted{
+  font-size:12px;
+}
+#view-shop .history-compact .price{
+  font-size:14px;
+}
   </style>
 </head>
 <body>
@@ -185,7 +199,7 @@
 
     <!-- 購入履歴 -->
     <div class="card">
-      <h3 style="margin-top:0">最近の注文（最新5件）</h3>
+      <h3 style="margin-top:0">最近の注文（最新2件）</h3>
       <div id="history-list" class="list"></div>
     </div>
 
@@ -343,7 +357,7 @@
 /* =========================
    基本情報
 ========================= */
-const APP_VERSION="v2.5.0";
+const APP_VERSION="v2.5.1";
 const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxZ55o2oKZUFKDJBk8Y_uJLT1Tj9YSYRVN8Ss0HwVu9ICAnCjyuqvIlVlyzFzKZMFyIFQ/exec"; // ← あなたのGAS /exec に差し替え
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
@@ -601,29 +615,47 @@ async function renderNewsAuth(n){
 /* =========================
    ログイン
 ========================= */
+// ▼ 差し替え：ログイン高速化（即遷移＋並列ロード＋厳しめタイムアウト）
 async function doLogin(){
   const id=$("#login-id").value.trim(), pass=$("#login-pass").value.trim(), err=$("#login-error");
   err.textContent="";
   if(!id){err.textContent="IDを入力してください";return}
   if(!/^\d{4}$/.test(pass)){err.textContent="パスワードは4桁の数字です";return}
+
   try{
-    const d=await api("login","POST",{id,password:pass},{timeoutMs:7000,retries:1});
+    // タイムアウト短縮・リトライなしでキビキビ
+    const d=await api("login","POST",{id,password:pass},{timeoutMs:5000,retries:0});
     if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
+
     store.set("token",d.token); store.set("user",d.user);
     state.me=d.user;
+
     if(/^s\d+/i.test(state.me.id)){ // ベンダー
-      await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]);
+      // ベンダーも並列でロードしてから表示
+      const p1=loadVendorSummary();
+      const p2=VendorMessages.load();
+      const p3=ClosedDays.load();
       setDefaultVisibleUntil();
+      await Promise.all([p1,p2,p3]);
       show("view-vendor");
     } else { // 生徒
+      // 先に画面を出してスケルトン表示→裏で並列ロード
       $("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;
-      await loadDashboard();
-      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報&新着
       show("view-shop");
-    }
-  }catch(e){err.textContent="通信エラー："+e.message}
-}
 
+      // スケルトン（読み込み中文言）
+      $("#shop-cards").innerHTML = '<div class="item muted">店舗を読み込み中...</div>';
+      $("#history-list").innerHTML = '<div class="item muted">履歴を読み込み中...</div>';
+
+      // 並列ロード：ダッシュボードと公開情報（auth）
+      const p1 = loadDashboard();           // 店一覧＋履歴
+      const p2 = loadPublicOverviewAuth();  // 営業情報＋各ベンダー最新1件
+      await Promise.allSettled([p1,p2]);    // 片方失敗でも画面は出し続ける
+    }
+  }catch(e){
+    err.textContent="通信エラー："+e.message;
+  }
+}
 /* =========================
    生徒：ダッシュボード
 ========================= */
