@@ -357,7 +357,7 @@
 /* =========================
    基本情報
 ========================= */
-const APP_VERSION="v2.5.1";
+const APP_VERSION="v2.5.2";
 const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxZ55o2oKZUFKDJBk8Y_uJLT1Tj9YSYRVN8Ss0HwVu9ICAnCjyuqvIlVlyzFzKZMFyIFQ/exec"; // ← あなたのGAS /exec に差し替え
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
@@ -659,8 +659,9 @@ async function doLogin(){
 /* =========================
    生徒：ダッシュボード
 ========================= */
+// ▼ 差し替え：履歴2件・コンパクト描画
 async function loadDashboard(){
-  const d=await api("dashboard","GET",null,{timeoutMs:7000,retries:1});
+  const d=await api("dashboard","GET",null,{timeoutMs:6000,retries:0});
   state.shops=d.shops||[];
 
   // 店リスト（カード）
@@ -672,33 +673,43 @@ async function loadDashboard(){
     box.appendChild(div);
   }
 
-  // 履歴（最新5件）
-  const list=$("#history-list"); list.innerHTML="";
-  const hist=(d.history||[]).slice(0,5);
+  // 履歴（最新2件・コンパクト）
+  const list=$("#history-list");
+  list.classList.add('history-compact');   // ← コンパクトCSS適用
+  list.innerHTML="";
+  const hist=(d.history||[]).slice(0,2);
+
+  // テキストを短く整形（過度な折返しを防ぐ）
+  const trim = (s, n)=> (s.length>n ? (s.slice(0,n-1)+'…') : s);
+
   for(const h of hist){
     const card=document.createElement("div");
     card.className=`item order-card ${h.cancellable?'order-pending':'order-confirmed'}`;
-    const itemsText=h.items.map(i=>`${i.item}（${fmtYen(i.unit_price)}）`).join("、");
+
+    // 商品名と価格を短くまとめる
+    const itemsText = h.items
+      .map(i=>`${i.item}（${fmtYen(i.unit_price)}）`)
+      .join("、");
+    const itemsShort = trim(itemsText, 42); // ← 1行想定で適度に省略
+
     card.innerHTML=`
       <div class="row-between">
-        <h4 style="margin:0">${h.shop_name}</h4>
+        <h4>${trim(h.shop_name, 18)}</h4>
         <div class="muted">${fmtDate(h.timestamp)}</div>
       </div>
-      <div class="muted" style="margin-top:5px;">${itemsText}</div>
-      <div class="row-between" style="border-top:1px dashed var(--line); margin-top:8px; padding-top:8px;">
-        <span>合計</span>
-        <div>
-          <span class="price" style="margin-right:8px">${fmtYen(h.total)}</span>
-          ${h.cancellable?'<button class="ghost btn-cancel" style="width:auto;padding:6px 10px;margin:0">取消</button>':''}
-        </div>
+      <div class="muted" style="margin-top:4px;">${itemsShort}</div>
+      <div class="row-between" style="margin-top:6px;">
+        <span class="muted">合計 <span class="price">${fmtYen(h.total)}</span></span>
+        ${h.cancellable ? '<button class="ghost btn-cancel" style="width:auto;padding:4px 8px;margin:0;font-size:12px">取消</button>' : ''}
       </div>
     `;
+
     const btn=card.querySelector('.btn-cancel');
     if(btn){
       btn.onclick=async()=>{
         if(!confirm('この注文を取り消します。よろしいですか？')) return;
         try{
-          const res=await api('cancel_order','POST',{order_id:h.order_id},{timeoutMs:7000,retries:0});
+          const res=await api('cancel_order','POST',{order_id:h.order_id},{timeoutMs:6000,retries:0});
           if(res.ok){ card.remove(); } else { alert(res.error||'取消に失敗しました'); }
         }catch(e){ alert('通信エラー：'+e.message); }
       };
