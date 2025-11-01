@@ -331,7 +331,7 @@
    基本情報
 ========================= */
 const APP_VERSION="v2.5.5";
-const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxZ55o2oKZUFKDJBk8Y_uJLT1Tj9YSYRVN8Ss0HwVu9ICAnCjyuqvIlVlyzFzKZMFyIFQ/exec"; // ← あなたのGAS /exec に差し替え
+const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbyFY9CJ0SgOuzgdfoworTmJr1ngnum3eJ_mZozdAfYKsSiZH8jTZ18onzGwtTkM80ajkg/exec"; // ← あなたのGAS /exec に差し替え
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
 const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).toString().padStart(2,"0")}:${String(d.getMinutes()).toString().padStart(2,"0")}`};
