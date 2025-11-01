@@ -85,43 +85,46 @@
     .row-wrap>label>input[type="date"]{width:auto}
     @media (max-width:640px){.row-wrap>label{flex:1 1 180px}}
 
-    /* ▼ ログイン画面専用（営業情報） */
-    #view-login .status-grid,
-    #view-login .status-row{
+    /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
+    #view-login .status-grid, #view-login .status-row,
+    #view-shop .status-grid,  #view-shop .status-row{
       display:grid;
       grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
       gap:10px; align-items:center;
     }
     @media (max-width:640px){
-      #view-login .status-grid,
-      #view-login .status-row{
+      #view-login .status-grid, #view-login .status-row,
+      #view-shop .status-grid,  #view-shop .status-row{
         grid-template-columns: 1fr 60px 60px 60px;
       }
     }
     /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
-    #status-header > div:not(:first-child){ text-align:right; }
+    #status-header > div:not(:first-child),
+    #status-header-auth > div:not(:first-child){ text-align:right; }
     /* ◯×セルは中央寄せ */
-    #view-login .status-row > div:nth-child(n+2){ text-align:center; }
+    #view-login .status-row > div:nth-child(n+2),
+    #view-shop  .status-row > div:nth-child(n+2){ text-align:center; }
 
     /* 長い店名を1行省略、縦に伸びない */
-    #view-login .shop-chip{
+    #view-login .shop-chip, #view-shop .shop-chip{
       display:grid;
       grid-template-columns: 28px 1fr; /* アバター + 店名 */
       align-items:center;
       gap:8px;
       min-width:0;
     }
-    #view-login .shop-name{
+    #view-login .shop-name, #view-shop .shop-name{
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
       min-width:0;
     }
 
+    /* そのほかログイン画面の既存スタイル */
     #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
-    #view-login .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
-    #view-login .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
-    #view-login .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
+    #view-login .badge-ok, #view-shop .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
+    #view-login .badge-ng, #view-shop .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
+    #view-login .shop-avatar, #view-shop .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
     #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
     #view-login .news-title{font-weight:700;line-height:1.5}
     #view-login .news-date{font-size:12px;color:#667085}
@@ -142,7 +145,7 @@
     <button id="btn-login">ログイン</button>
     <p id="login-error" class="muted center"></p>
 
-    <!-- 営業情報 -->
+    <!-- 営業情報（未ログイン） -->
     <div id="public-status-card" class="card" style="margin-top:18px">
       <div class="row-between">
         <h3 style="margin:0">営業情報</h3>
@@ -159,7 +162,7 @@
       <p id="status-empty" class="muted" style="margin:8px 0 0 0;display:none">現在、表示できる店舗がありません。</p>
     </div>
 
-    <!-- 新着情報（本文は最初から展開） -->
+    <!-- 新着情報（未ログイン：複数件、本文展開） -->
     <div id="public-news-card" class="card" style="margin-top:12px">
       <div class="row-between">
         <h3 style="margin:0">新着情報</h3>
@@ -170,17 +173,49 @@
     </div>
   </section>
 
-  <!-- 生徒 -->
+  <!-- 生徒（ログイン後） -->
   <section id="view-shop" class="hidden">
     <h3 id="welcome-message" style="margin-top:0;font-weight:normal"></h3>
+
+    <!-- 弁当屋を選択 -->
     <div class="card">
       <h2 style="margin-top:0">弁当屋を選択</h2>
       <div id="shop-cards" class="list"></div>
     </div>
+
+    <!-- 購入履歴 -->
     <div class="card">
       <h3 style="margin-top:0">最近の注文（最新5件）</h3>
       <div id="history-list" class="list"></div>
     </div>
+
+    <!-- 営業情報（ログイン後用：auth） -->
+    <div id="public-status-card-auth" class="card">
+      <div class="row-between">
+        <h3 style="margin:0">営業情報</h3>
+        <button id="btn-public-refresh-auth" class="ghost" style="width:auto">更新</button>
+      </div>
+      <p class="muted" style="margin:6px 0 10px 0">当日から3日分の注文可否（◯=注文可能 / ×=注文不可）。</p>
+      <div id="status-header-auth" class="status-grid muted" style="font-weight:700">
+        <div class="col-hide-sm"></div>
+        <div><span class="pill-day" id="day0-label-auth">—</span></div>
+        <div><span class="pill-day" id="day1-label-auth">—</span></div>
+        <div><span class="pill-day" id="day2-label-auth">—</span></div>
+      </div>
+      <div id="status-rows-auth" class="list" style="margin-top:10px"></div>
+      <p id="status-empty-auth" class="muted" style="margin:8px 0 0 0;display:none">現在、表示できる店舗がありません。</p>
+    </div>
+
+    <!-- 新着情報（ログイン後用：auth：最新1件のみ表示、本文展開） -->
+    <div id="public-news-card-auth" class="card">
+      <div class="row-between">
+        <h3 style="margin:0">新着情報</h3>
+        <button id="btn-news-refresh-auth" class="ghost" style="width:auto">更新</button>
+      </div>
+      <div id="news-list-auth" class="list" style="margin-top:10px"></div>
+      <p id="news-empty-auth" class="muted" style="margin:8px 0 0 0;display:none">各店からのお知らせはまだありません。</p>
+    </div>
+
     <div class="footer-actions row"><button class="ghost" id="btn-logout">ログアウト</button></div>
   </section>
 
@@ -276,11 +311,11 @@
         <button class="ghost" id="btn-msg-refresh" style="width:auto">再読込</button>
         <button id="btn-msg-save" style="width:auto">保存</button>
       </div>
-        <p class="muted" id="msg-status" style="margin:8px 0 0 0"></p>
-        <hr style="margin:14px 0">
-        <h4 style="margin:0 0 8px 0">最新3件</h4>
-        <div id="vendor-msg-list" class="list"></div>
-        <p id="vendor-msg-empty" class="muted" style="margin:6px 0 0 0">まだお知らせはありません。</p>
+      <p class="muted" id="msg-status" style="margin:8px 0 0 0"></p>
+      <hr style="margin:14px 0">
+      <h4 style="margin:0 0 8px 0">最新3件</h4>
+      <div id="vendor-msg-list" class="list"></div>
+      <p id="vendor-msg-empty" class="muted" style="margin:6px 0 0 0">まだお知らせはありません。</p>
     </div>
 
     <!-- 定休日設定 -->
@@ -308,8 +343,8 @@
 /* =========================
    基本情報
 ========================= */
-const APP_VERSION="v2.4.2-fast-align";
-const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbww1-igL4m5aMGhn_fJlFGFlOkXx9Nh1QPeb1z3yL9TV25CviTxC6X3vZpHppCsLYAMig/exec"; // ← あなたのGAS /exec に差し替え
+const APP_VERSION="v2.5.0-auth-overview";
+const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxZ55o2oKZUFKDJBk8Y_uJLT1Tj9YSYRVN8Ss0HwVu9ICAnCjyuqvIlVlyzFzKZMFyIFQ/exec"; // ← あなたのGAS /exec に差し替え
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
 const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).toString().padStart(2,"0")}:${String(d.getMinutes()).toString().padStart(2,"0")}`};
@@ -317,23 +352,15 @@ const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return`${d.getFullYea
 /* =========================
    軽量ストア＆キャッシュ
 ========================= */
-const store={
-  set(k,v){localStorage.setItem(k,JSON.stringify(v))},
-  get(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
-  del(k){localStorage.removeItem(k)}
-};
-
+const store={ set(k,v){localStorage.setItem(k,JSON.stringify(v))}, get(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}, del(k){localStorage.removeItem(k)} };
 const cache={
-  get(key, ttlSec){
-    const raw=localStorage.getItem(`cache:${key}`); if(!raw) return null;
-    try{ const {t,v}=JSON.parse(raw); if(Date.now()-t>ttlSec*1000) return null; return v; }catch{ return null; }
-  },
+  get(key, ttlSec){ const raw=localStorage.getItem(`cache:${key}`); if(!raw) return null; try{ const {t,v}=JSON.parse(raw); if(Date.now()-t>ttlSec*1000) return null; return v; }catch{ return null; } },
   set(key, value){ localStorage.setItem(`cache:${key}`, JSON.stringify({t: Date.now(), v:value})) },
   del(key){ localStorage.removeItem(`cache:${key}`) }
 };
 
 /* =========================
-   遅延ローダー（体感改善）
+   遅延ローダー
 ========================= */
 let _loaderTimer=null;
 function showLoading(on){
@@ -342,7 +369,7 @@ function showLoading(on){
     _loaderTimer=setTimeout(()=>{
       $("#loading-overlay").classList.remove("hidden");
       $$("input,button,select,textarea").forEach(e=>e.disabled=true);
-    }, 300); // 0.3秒後に表示
+    }, 300);
   }else{
     $("#loading-overlay").classList.add("hidden");
     $$("input,button,select,textarea").forEach(e=>e.disabled=false);
@@ -350,7 +377,7 @@ function showLoading(on){
 }
 
 /* =========================
-   API（タイムアウト/再試行付き）
+   API（タイムアウト/再試行）
 ========================= */
 async function apiCore(fn,method="GET",body=null){
   const token=store.get("token");
@@ -370,7 +397,6 @@ async function apiCore(fn,method="GET",body=null){
   if(!r.ok){ throw new Error(`${r.status} ${r.statusText} - ${text.slice(0,120)}`); }
   return JSON.parse(text);
 }
-
 async function api(fn,method="GET",body=null,{timeoutMs=7000,retries=1,withLoader=true}={}){
   if(withLoader) showLoading(true);
   try{
@@ -384,9 +410,7 @@ async function api(fn,method="GET",body=null,{timeoutMs=7000,retries=1,withLoade
         if(attempt===retries) throw e;
       }
     }
-  } finally {
-    if(withLoader) showLoading(false);
-  }
+  } finally { if(withLoader) showLoading(false); }
 }
 
 /* =========================
@@ -395,18 +419,9 @@ async function api(fn,method="GET",body=null,{timeoutMs=7000,retries=1,withLoade
 function show(id){$$("main>section").forEach(s=>s.classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
 
 /* =========================
-   テキスト（URL自動リンク＋改行）
+   テキスト整形
 ========================= */
-const Text={
-  autoLinkAndBreaks(text){
-    const safe=document.createElement('div'); safe.textContent=text||'';
-    let s=safe.textContent;
-    const urlRegex=/(https?:\/\/[^\s]+)/g;
-    s=s.replace(urlRegex,(m)=>`<a href="${m}" target="_blank" rel="noopener noreferrer">${m}</a>`);
-    s=s.replace(/\n/g,'<br>');
-    return s;
-  }
-};
+const Text={ autoLinkAndBreaks(text){ const safe=document.createElement('div'); safe.textContent=text||''; let s=safe.textContent; const urlRegex=/(https?:\/\/[^\s]+)/g; s=s.replace(urlRegex,(m)=>`<a href="${m}" target="_blank" rel="noopener noreferrer">${m}</a>`); s=s.replace(/\n/g,'<br>'); return s; } };
 
 /* =========================
    状態
@@ -414,7 +429,7 @@ const Text={
 let state={ me:null, shops:[], chosenShop:null, menu:[], cart:[] };
 
 /* =========================
-   公開ビュー：営業情報＋新着情報
+   公開ビュー：営業情報＋新着情報（未ログイン）
 ========================= */
 async function loadPublicOverview(force=false){
   // ラベル
@@ -426,30 +441,18 @@ async function loadPublicOverview(force=false){
   });
 
   // キャッシュ即時描画（60秒）
-  const cOverview=cache.get('public_overview',60);
-  if(cOverview) renderOverview(cOverview);
-  const cNews=cache.get('latest_news',60);
-  if(cNews) renderNews(cNews);
+  const cOverview=cache.get('public_overview',60); if(cOverview) renderOverview(cOverview);
+  const cNews=cache.get('latest_news',60);       if(cNews)     renderNews(cNews);
 
-  // 最新取得（ボタン時はforce=trueだが、ここでは同じ挙動でOK）
-  try{
-    const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0});
-    cache.set('public_overview',d); renderOverview(d);
-  }catch(e){ /* サイレント */ }
-  try{
-    const n=await api('latest_messages_all','GET',null,{withLoader:false,timeoutMs:6000,retries:0});
-    cache.set('latest_news',n); renderNews(n);
-  }catch(e){ /* サイレント */ }
+  // 最新取得
+  try{ const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('public_overview',d); renderOverview(d);}catch(e){}
+  try{ const n=await api('latest_messages_all','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('latest_news',n); renderNews(n);}catch(e){}
 }
-
 function renderOverview(d){
   const rows=document.getElementById("status-rows");
   if(!rows) return;
   rows.innerHTML="";
-  if(!(d&&d.shops&&d.shops.length)){
-    document.getElementById("status-empty").style.display="block";
-    return;
-  }
+  if(!(d&&d.shops&&d.shops.length)){ document.getElementById("status-empty").style.display="block"; return; }
   document.getElementById("status-empty").style.display="none";
   d.shops.forEach(s=>{
     const div=document.createElement("div");
@@ -464,7 +467,6 @@ function renderOverview(d){
     rows.appendChild(div);
   });
 }
-
 async function renderNews(n){
   const list=$("#news-list"); if(!list) return; list.innerHTML='';
   if(!(n&&n.news&&n.news.length)){ $("#news-empty").style.display='block'; return; }
@@ -493,6 +495,110 @@ async function renderNews(n){
 }
 
 /* =========================
+   ログイン後ビュー：営業情報＋新着情報（auth）
+========================= */
+async function loadPublicOverviewAuth(force=false){
+  // ラベル（auth）
+  const today=new Date();
+  const dates=[0,1,2].map(n=>new Date(today.getFullYear(),today.getMonth(),today.getDate()+n));
+  ['day0-label-auth','day1-label-auth','day2-label-auth'].forEach((id,i)=>{
+    const d=dates[i]; const wd=['日','月','火','水','木','金','土'][d.getDay()];
+    const el=document.getElementById(id); if(el) el.textContent=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）`;
+  });
+
+  // キャッシュ即時描画（60秒）
+  const cOverview=cache.get('public_overview',60); if(cOverview) renderOverviewAuth(cOverview);
+  const cNews=cache.get('latest_news',60);       if(cNews)     renderNewsAuth(cNews);
+
+  // 最新取得
+  try{ const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('public_overview',d); renderOverviewAuth(d);}catch(e){}
+  try{ const n=await api('latest_messages_all','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('latest_news',n); renderNewsAuth(n);}catch(e){}
+}
+function renderOverviewAuth(d){
+  const rows=document.getElementById("status-rows-auth");
+  if(!rows) return;
+  rows.innerHTML="";
+  if(!(d&&d.shops&&d.shops.length)){ document.getElementById("status-empty-auth").style.display="block"; return; }
+  document.getElementById("status-empty-auth").style.display="none";
+  d.shops.forEach(s=>{
+    const div=document.createElement("div");
+    div.className="status-row";
+    div.innerHTML=`
+      <div class="shop-chip">
+        <span class="shop-avatar">${(s.shop_name||'?').slice(0,1)}</span>
+        <span class="shop-name">${s.shop_name}</span>
+      </div>
+      ${(s.days||[]).map(x=>`<div class="${x.open?'badge-ok':'badge-ng'}">${x.open?'◯':'×'}</div>`).join('')}
+    `;
+    rows.appendChild(div);
+  });
+}
+// ▼ 差し替え：各ベンダーから“最新1件ずつ”表示（本文は最初から展開）
+async function renderNewsAuth(n){
+  const list = $("#news-list-auth");
+  if(!list) return;
+  list.innerHTML = '';
+
+  const news = (n && n.news) ? n.news.slice() : [];
+  if(!news.length){
+    $("#news-empty-auth").style.display = 'block';
+    return;
+  }
+  $("#news-empty-auth").style.display = 'none';
+
+  // 1) 全体を日付降順に並べ替え
+  news.sort((a,b)=>{
+    const ta = a.updated_at ? Date.parse(a.updated_at) : 0;
+    const tb = b.updated_at ? Date.parse(b.updated_at) : 0;
+    return tb - ta;
+  });
+
+  // 2) shop_idごとに最初の1件だけ採用
+  const seen = new Set();
+  const perVendor = [];
+  for(const item of news){
+    const sid = String(item.shop_id || '');
+    if(sid && !seen.has(sid)){
+      perVendor.push(item);
+      seen.add(sid);
+    }
+  }
+
+  // 3) 1ベンダー=1カードを描画（本文は item.body が無ければAPIで取得）
+  for(const item of perVendor){
+    const d = item.updated_at ? new Date(item.updated_at) : null;
+    const ymd = d ? `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${['日','月','火','水','木','金','土'][d.getDay()]}）` : '';
+
+    const row = document.createElement('div');
+    row.className = 'news-item';
+    row.innerHTML = `
+      <div class="shop-avatar">${(item.shop_name||'?').slice(0,1)}</div>
+      <div style="flex:1">
+        <div class="news-title">${item.shop_name} — ${item.title || '(タイトル未設定)'}</div>
+        <div class="news-date" style="margin:4px 0 6px 0">${ymd}</div>
+        <div class="notice-body"></div>
+      </div>
+    `;
+    const bodyEl = row.querySelector('.notice-body');
+
+    // 可能ならレスポンスの本文をそのまま使用（なければ補完取得）
+    if(item.body && item.body.trim()){
+      bodyEl.innerHTML = Text.autoLinkAndBreaks(item.body);
+    }else{
+      try{
+        const res = await api('messages','GET',{shop_id:item.shop_id},{withLoader:false,timeoutMs:5000,retries:0});
+        const first = (res.ok && res.list && res.list[0]) ? res.list[0] : null;
+        bodyEl.innerHTML = first ? Text.autoLinkAndBreaks(first.body||'') : '（本文はありません）';
+      }catch(e){
+        bodyEl.innerHTML = '（本文の取得に失敗しました）';
+      }
+    }
+    bodyEl.style.display = 'block'; // ログイン後は最初から展開
+    list.appendChild(row);
+  }
+}
+
+/* =========================
    ログイン
 ========================= */
 async function doLogin(){
@@ -512,6 +618,7 @@ async function doLogin(){
     } else { // 生徒
       $("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;
       await loadDashboard();
+      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報&新着
       show("view-shop");
     }
   }catch(e){err.textContent="通信エラー："+e.message}
@@ -606,7 +713,7 @@ async function enterMenu(){
   } finally { showLoading(false); }
 }
 
-// 生徒向けお知らせ（最新は開いた状態）
+// 生徒向け お知らせ（最新は展開）
 function renderShopMessages(list){
   const wrap=$('#notice-list'); const empty=$('#notice-empty'); const card=$('#notice-card');
   if(!wrap||!empty||!card) return;
@@ -626,7 +733,7 @@ function renderShopMessages(list){
     `;
     const body=item.querySelector('.notice-body');
     body.innerHTML=Text.autoLinkAndBreaks(m.body||'');
-    if(idx===0) body.style.display='block'; // 最新は展開
+    if(idx===0) body.style.display='block';
     item.querySelector('.notice-title').onclick=()=>{
       body.style.display=(body.style.display==='none'||body.style.display==='')?'block':'none';
     };
@@ -762,19 +869,9 @@ const VendorMessages={
    店：定休日
 ========================= */
 const ClosedDays={
-  selected:new Set(),
-  monthKeys:[],
-  async load(){
-    const d=await api('closed_days','GET',null,{timeoutMs:7000,retries:0});
-    this.selected=new Set(d.days||[]); this.render(); $('#closed-msg').textContent='';
-  },
-  initMonths(){
-    const now=new Date();
-    const ym=(dt)=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-    const cur=new Date(now.getFullYear(),now.getMonth(),1);
-    const nxt=new Date(now.getFullYear(),now.getMonth()+1,1);
-    this.monthKeys=[ym(cur),ym(nxt)];
-  },
+  selected:new Set(), monthKeys:[],
+  async load(){ const d=await api('closed_days','GET',null,{timeoutMs:7000,retries:0}); this.selected=new Set(d.days||[]); this.render(); $('#closed-msg').textContent=''; },
+  initMonths(){ const now=new Date(); const ym=(dt)=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`; const cur=new Date(now.getFullYear(),now.getMonth(),1); const nxt=new Date(now.getFullYear(),now.getMonth()+1,1); this.monthKeys=[ym(cur),ym(nxt)]; },
   daysInMonth(y,m){ return new Date(y,m,0).getDate(); },
   makeCell(dateStr){
     const div=document.createElement('div');
@@ -802,11 +899,7 @@ const ClosedDays={
       box.appendChild(title); box.appendChild(grid); wrap.appendChild(box);
     });
   },
-  async save(){
-    const body={dates:Array.from(this.selected).sort()};
-    const res=await api('save_closed_days','POST',body,{timeoutMs:8000,retries:0});
-    $('#closed-msg').textContent = res.ok ? '保存しました（当月＋翌月を上書き）。' : (res.error||'保存に失敗しました');
-  }
+  async save(){ const body={dates:Array.from(this.selected).sort()}; const res=await api('save_closed_days','POST',body,{timeoutMs:8000,retries:0}); $('#closed-msg').textContent = res.ok ? '保存しました（当月＋翌月を上書き）。' : (res.error||'保存に失敗しました'); }
 };
 
 /* =========================
@@ -842,9 +935,13 @@ $("#btn-closed-save").onclick=()=> ClosedDays.save();
 $("#btn-msg-refresh").onclick=()=> VendorMessages.load();
 $("#btn-msg-save").onclick=()=> VendorMessages.save();
 
-// ログイン画面の公開情報 更新ボタン
+// 未ログインの公開情報 更新ボタン
 $("#btn-public-refresh").onclick=()=> loadPublicOverview(true);
 $("#btn-news-refresh").onclick=()=> loadPublicOverview(true);
+
+// ログイン後の公開情報 更新ボタン
+$("#btn-public-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
+$("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
 
 /* =========================
    初期化
@@ -860,7 +957,9 @@ $("#btn-news-refresh").onclick=()=> loadPublicOverview(true);
       show("view-vendor");
     }else{
       $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
-      await loadDashboard(); show("view-shop");
+      await loadDashboard();
+      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報＆新着（最新1件）
+      show("view-shop");
     }
   }else{
     show("view-login");
