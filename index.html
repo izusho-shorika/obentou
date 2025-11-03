@@ -130,25 +130,18 @@
     #view-login .news-date{font-size:12px;color:#667085}
   
     /* --- 履歴カードをコンパクトに（view-shop内のみ） --- */
-#view-shop .history-compact .item{
-  padding:10px;
-}
-#view-shop .history-compact h4{
-  font-size:14px; margin:0;
-}
-#view-shop .history-compact .muted{
-  font-size:12px;
-}
-#view-shop .history-compact .price{
-  font-size:14px;
-}
-.visually-hidden {
-  position: absolute;
-  width: 1px; height: 1px;
-  margin: -1px; padding: 0; border: 0;
-  clip: rect(0 0 0 0);
-  overflow: hidden;
-}
+    #view-shop .history-compact .item{ padding:10px; }
+    #view-shop .history-compact h4{ font-size:14px; margin:0; }
+    #view-shop .history-compact .muted{ font-size:12px; }
+    #view-shop .history-compact .price{ font-size:14px; }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0; border: 0;
+      clip: rect(0 0 0 0);
+      overflow: hidden;
+    }
   </style>
 </head>
 <body>
@@ -156,18 +149,18 @@
 
 <main>
   <!-- ログイン -->
- <section id="view-login" class="card">
- <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
+  <section id="view-login" class="card">
+    <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
-  <div style="padding-top:10px">
-    <input id="login-id" placeholder="ログインID（例：20251101）">
-    <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
-  </div>
-  <div class="spacer"></div>
-  <button id="btn-login">ログイン</button>
-  <p id="login-error" class="muted center"></p>
-</section>
+    <p style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
+    <div style="padding-top:10px">
+      <input id="login-id" placeholder="ログインID（例：20251101）">
+      <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
+    </div>
+    <div class="spacer"></div>
+    <button id="btn-login">ログイン</button>
+    <p id="login-error" class="muted center"></p>
+  </section>
 
   <!-- 生徒（ログイン後） -->
   <section id="view-shop" class="hidden">
@@ -373,43 +366,6 @@ function showLoading(on){
 }
 
 /* =========================
-   API（タイムアウト/再試行）
-========================= */
-async function apiCore(fn,method="GET",body=null){
-  const token=store.get("token");
-  const u=new URL(ENDPOINT_URL); u.searchParams.set("fn",fn);
-  let r;
-  if(method==="GET"){
-    if(token) u.searchParams.set("token",token);
-    if(body) Object.entries(body).forEach(([k,v])=> u.searchParams.set(k, typeof v==="object"?JSON.stringify(v):String(v)));
-    r=await fetch(u);
-  }else{
-    const f=new URLSearchParams();
-    if(body) for(const[k,v] of Object.entries(body)) f.append(k, typeof v==="object"?JSON.stringify(v):String(v));
-    if(token) f.append("token",token);
-    r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:f});
-  }
-  const text=await r.text();
-  if(!r.ok){ throw new Error(`${r.status} ${r.statusText} - ${text.slice(0,120)}`); }
-  return JSON.parse(text);
-}
-async function api(fn,method="GET",body=null,{timeoutMs=7000,retries=1,withLoader=true}={}){
-  if(withLoader) showLoading(true);
-  try{
-    for(let attempt=0; attempt<=retries; attempt++){
-      try{
-        return await Promise.race([
-          apiCore(fn,method,body),
-          new Promise((_,rej)=> setTimeout(()=>rej(new Error('timeout')), timeoutMs))
-        ]);
-      }catch(e){
-        if(attempt===retries) throw e;
-      }
-    }
-  } finally { if(withLoader) showLoading(false); }
-}
-
-/* =========================
    画面切り替え
 ========================= */
 function show(id){$$("main>section").forEach(s=>s.classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
@@ -448,8 +404,8 @@ function renderOverview(d){
   const rows=document.getElementById("status-rows");
   if(!rows) return;
   rows.innerHTML="";
-  if(!(d&&d.shops&&d.shops.length)){ document.getElementById("status-empty").style.display="block"; return; }
-  document.getElementById("status-empty").style.display="none";
+  if(!(d&&d.shops&&d.shops.length)){ const em=document.getElementById("status-empty"); if(em) em.style.display="block"; return; }
+  const em=document.getElementById("status-empty"); if(em) em.style.display="none";
   d.shops.forEach(s=>{
     const div=document.createElement("div");
     div.className="status-row";
@@ -465,8 +421,8 @@ function renderOverview(d){
 }
 async function renderNews(n){
   const list=$("#news-list"); if(!list) return; list.innerHTML='';
-  if(!(n&&n.news&&n.news.length)){ $("#news-empty").style.display='block'; return; }
-  $("#news-empty").style.display='none';
+  if(!(n&&n.news&&n.news.length)){ const em=$("#news-empty"); if(em) em.style.display='block'; return; }
+  const em=$("#news-empty"); if(em) em.style.display='none';
   for(const item of n.news){
     const d=item.updated_at?new Date(item.updated_at):null;
     const ymd=d?`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${['日','月','火','水','木','金','土'][d.getDay()]}）`:'';
@@ -514,8 +470,8 @@ function renderOverviewAuth(d){
   const rows=document.getElementById("status-rows-auth");
   if(!rows) return;
   rows.innerHTML="";
-  if(!(d&&d.shops&&d.shops.length)){ document.getElementById("status-empty-auth").style.display="block"; return; }
-  document.getElementById("status-empty-auth").style.display="none";
+  if(!(d&&d.shops&&d.shops.length)){ const em=document.getElementById("status-empty-auth"); if(em) em.style.display="block"; return; }
+  const em=document.getElementById("status-empty-auth"); if(em) em.style.display="none";
   d.shops.forEach(s=>{
     const div=document.createElement("div");
     div.className="status-row";
@@ -529,7 +485,7 @@ function renderOverviewAuth(d){
     rows.appendChild(div);
   });
 }
-// ▼ 差し替え：各ベンダーから“最新1件ずつ”表示（本文は最初から展開）
+// ▼ 各ベンダー“最新1件ずつ”表示（本文は最初から展開）
 async function renderNewsAuth(n){
   const list = $("#news-list-auth");
   if(!list) return;
@@ -577,7 +533,6 @@ async function renderNewsAuth(n){
     `;
     const bodyEl = row.querySelector('.notice-body');
 
-    // 可能ならレスポンスの本文をそのまま使用（なければ補完取得）
     if(item.body && item.body.trim()){
       bodyEl.innerHTML = Text.autoLinkAndBreaks(item.body);
     }else{
@@ -589,7 +544,7 @@ async function renderNewsAuth(n){
         bodyEl.innerHTML = '（本文の取得に失敗しました）';
       }
     }
-    bodyEl.style.display = 'block'; // ログイン後は最初から展開
+    bodyEl.style.display = 'block';
     list.appendChild(row);
   }
 }
@@ -597,7 +552,7 @@ async function renderNewsAuth(n){
 /* =========================
    ログイン
 ========================= */
-// ▼ 差し替え：ログイン高速化（即遷移＋並列ロード＋厳しめタイムアウト）
+// 既存方針のまま（ID+4桁PW）
 async function doLogin(){
   const id=$("#login-id").value.trim(), pass=$("#login-pass").value.trim(), err=$("#login-error");
   err.textContent="";
@@ -605,7 +560,6 @@ async function doLogin(){
   if(!/^\d{4}$/.test(pass)){err.textContent="パスワードは4桁の数字です";return}
 
   try{
-    // タイムアウト短縮・リトライなしでキビキビ
     const d=await api("login","POST",{id,password:pass},{timeoutMs:5000,retries:0});
     if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
 
@@ -613,7 +567,6 @@ async function doLogin(){
     state.me=d.user;
 
     if(/^s\d+/i.test(state.me.id)){ // ベンダー
-      // ベンダーも並列でロードしてから表示
       const p1=loadVendorSummary();
       const p2=VendorMessages.load();
       const p3=ClosedDays.load();
@@ -621,27 +574,19 @@ async function doLogin(){
       await Promise.all([p1,p2,p3]);
       show("view-vendor");
     } else { // 生徒
-      // 先に画面を出してスケルトン表示→裏で並列ロード
-      $("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;
-      show("view-shop");
-
-      // スケルトン（読み込み中文言）
+      // 先に画面を出さず、完全読込→表示 は安定化パッチ側で統一管理
+      // ここではスケルトンだけ差し込む（補助）
       $("#shop-cards").innerHTML = '<div class="item muted">店舗を読み込み中...</div>';
       $("#history-list").innerHTML = '<div class="item muted">履歴を読み込み中...</div>';
-
-      // 並列ロード：ダッシュボードと公開情報（auth）
-      const p1 = loadDashboard();           // 店一覧＋履歴
-      const p2 = loadPublicOverviewAuth();  // 営業情報＋各ベンダー最新1件
-      await Promise.allSettled([p1,p2]);    // 片方失敗でも画面は出し続ける
     }
   }catch(e){
     err.textContent="通信エラー："+e.message;
   }
 }
+
 /* =========================
    生徒：ダッシュボード
 ========================= */
-// ▼ 差し替え：履歴2件・コンパクト描画
 async function loadDashboard(){
   const d=await api("dashboard","GET",null,{timeoutMs:6000,retries:0});
   state.shops=d.shops||[];
@@ -657,22 +602,18 @@ async function loadDashboard(){
 
   // 履歴（最新2件・コンパクト）
   const list=$("#history-list");
-  list.classList.add('history-compact');   // ← コンパクトCSS適用
+  list.classList.add('history-compact');
   list.innerHTML="";
   const hist=(d.history||[]).slice(0,2);
 
-  // テキストを短く整形（過度な折返しを防ぐ）
   const trim = (s, n)=> (s.length>n ? (s.slice(0,n-1)+'…') : s);
 
   for(const h of hist){
     const card=document.createElement("div");
     card.className=`item order-card ${h.cancellable?'order-pending':'order-confirmed'}`;
 
-    // 商品名と価格を短くまとめる
-    const itemsText = h.items
-      .map(i=>`${i.item}（${fmtYen(i.unit_price)}）`)
-      .join("、");
-    const itemsShort = trim(itemsText, 42); // ← 1行想定で適度に省略
+    const itemsText = h.items.map(i=>`${i.item}（${fmtYen(i.unit_price)}）`).join("、");
+    const itemsShort = trim(itemsText, 42);
 
     card.innerHTML=`
       <div class="row-between">
@@ -699,7 +640,7 @@ async function loadDashboard(){
     list.appendChild(card);
   }
 
-  $("#btn-logout").onclick=doLogout;
+  const btnLogout=$("#btn-logout"); if(btnLogout) btnLogout.onclick=doLogout;
 }
 
 /* =========================
@@ -949,32 +890,32 @@ function doLogout(){
    起動時イベント
 ========================= */
 $("#app-version").textContent=APP_VERSION;
-$("#btn-login").onclick=doLogin;
-$("#btn-back-shop").onclick=()=> show("view-shop");
-$("#btn-finish").onclick=doLogout;
-$("#btn-logout").onclick=doLogout;
+const btnLogin=$("#btn-login"); if(btnLogin) btnLogin.onclick=doLogin;
+const btnBack=$("#btn-back-shop"); if(btnBack) btnBack.onclick=()=> show("view-shop");
+const btnFinish=$("#btn-finish"); if(btnFinish) btnFinish.onclick=doLogout;
+const btnLogout=$("#btn-logout"); if(btnLogout) btnLogout.onclick=doLogout;
 
 // ベンダー
-$("#btn-vendor-refresh").onclick=async()=>{ await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]); setDefaultVisibleUntil(); };
-$("#btn-vendor-logout").onclick=doLogout;
-$("#btn-closed-refresh").onclick=()=> ClosedDays.load();
-$("#btn-closed-save").onclick=()=> ClosedDays.save();
-$("#btn-msg-refresh").onclick=()=> VendorMessages.load();
-$("#btn-msg-save").onclick=()=> VendorMessages.save();
+const bvr=$("#btn-vendor-refresh"); if(bvr) bvr.onclick=async()=>{ await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]); setDefaultVisibleUntil(); };
+const bvl=$("#btn-vendor-logout"); if(bvl) bvl.onclick=doLogout;
+const bcr=$("#btn-closed-refresh"); if(bcr) bcr.onclick=()=> ClosedDays.load();
+const bcs=$("#btn-closed-save"); if(bcs) bcs.onclick=()=> ClosedDays.save();
+const bmr=$("#btn-msg-refresh"); if(bmr) bmr.onclick=()=> VendorMessages.load();
+const bms=$("#btn-msg-save"); if(bms) bms.onclick=()=> VendorMessages.save();
 
-// 未ログインの公開情報 更新ボタン
-$("#btn-public-refresh").onclick=()=> loadPublicOverview(true);
-$("#btn-news-refresh").onclick=()=> loadPublicOverview(true);
+// 未ログインの公開情報 更新ボタン（存在すれば）
+const bpr=$("#btn-public-refresh"); if(bpr) bpr.onclick=()=> loadPublicOverview(true);
+const bnr=$("#btn-news-refresh"); if(bnr) bnr.onclick=()=> loadPublicOverview(true);
 
 // ログイン後の公開情報 更新ボタン
-$("#btn-public-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
-$("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
+const bpra=$("#btn-public-refresh-auth"); if(bpra) bpra.onclick=()=> loadPublicOverviewAuth(true);
+const bnra=$("#btn-news-refresh-auth"); if(bnra) bnra.onclick=()=> loadPublicOverviewAuth(true);
 
 /* =========================
    初期化
 ========================= */
 (async()=>{
-  loadPublicOverview(); // 未ログインでも表示
+  loadPublicOverview(); // 未ログインでも表示（要素が無ければ何もしない）
   const token=store.get("token"); const user=store.get("user");
   if(token&&user){
     state.me=user;
@@ -984,120 +925,117 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
       show("view-vendor");
     }else{
       $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
+      // 完全読込→表示は下の安定化パッチで再実行されるため、ここでは見せない
       await loadDashboard();
-      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報＆新着（最新1件）
+      await loadPublicOverviewAuth();
       show("view-shop");
     }
   }else{
     show("view-login");
   }
 })();
+</script>
 
-/* ====== 安定化パッチ（apiを引数渡し方式に修正） ====== */
+<!-- ====== 安定化パッチ v2（api統合／完全読込→表示／ローダー参照カウント） ====== -->
+<script>
 (function(){
-  // 既存NETがなければ定義
-  window.NET = window.NET || { BASE_TIMEOUT: 10000, MAX_RETRIES: 2, BACKOFF_MS: 1200 };
+  // 設定
+  window.NET = Object.assign({ BASE_TIMEOUT: 10000, MAX_RETRIES: 2, BACKOFF_MS: 1200 }, window.NET||{});
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
-  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+  // ローダー参照カウント
+  const LOADER = {
+    n:0,
+    on(){ this.n++; if(typeof showLoading==="function") showLoading(true); },
+    off(){ this.n=Math.max(0,this.n-1); if(typeof showLoading==="function") showLoading(this.n>0); },
+    wrap(p){ this.on(); return Promise.resolve(p).finally(()=>this.off()); }
+  };
 
-  async function fetchWithTimeout(input, init, timeoutMs){
-    const ctrl = new AbortController();
-    const id = setTimeout(()=>ctrl.abort(), timeoutMs);
-    try{ return await fetch(input, {...(init||{}), signal: ctrl.signal}); }
+  // fetch with timeout
+  async function fetchWithTimeout(input,init,timeoutMs){
+    const ctrl=new AbortController();
+    const id=setTimeout(()=>ctrl.abort(),timeoutMs);
+    try{ return await fetch(input,{...(init||{}),signal:ctrl.signal}); }
     finally{ clearTimeout(id); }
   }
 
-  // ★ apiCore: タイムアウトは引数 tmo で受け取る
-  window.apiCore = async function apiCore(fn, method="GET", body=null, tmo){
-    // 既存のENDPOINT_URL / store を利用
-    const token = window.store && typeof store.get==="function" ? store.get("token") : null;
-    const u = new URL(window.ENDPOINT_URL); u.searchParams.set("fn", fn);
-
-    let init = {};
-    if(method === "GET"){
-      if(token) u.searchParams.set("token", token);
-      if(body) Object.entries(body).forEach(([k,v])=>{
-        u.searchParams.set(k, typeof v==="object" ? JSON.stringify(v) : String(v));
-      });
+  // apiCore（タイムアウトは引数）
+  window.apiCore = async function apiCore(fn,method="GET",body=null,tmo){
+    const token=window.store?.get?.("token")||null;
+    const u=new URL(window.ENDPOINT_URL);
+    u.searchParams.set("fn",fn);
+    let init={};
+    if(method==="GET"){
+      if(token) u.searchParams.set("token",token);
+      if(body) for(const [k,v] of Object.entries(body)) u.searchParams.set(k,typeof v==="object"?JSON.stringify(v):String(v));
     }else{
-      const f = new URLSearchParams();
-      if(body) for(const [k,v] of Object.entries(body)){
-        f.append(k, typeof v==="object" ? JSON.stringify(v) : String(v));
-      }
-      if(token) f.append("token", token);
-      init = { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"}, body:f };
+      const f=new URLSearchParams();
+      if(body) for(const [k,v] of Object.entries(body)) f.append(k,typeof v==="object"?JSON.stringify(v):String(v));
+      if(token) f.append("token",token);
+      init={method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:f};
     }
-
-    const timeout = (typeof tmo === "number" ? tmo : (window.NET?.BASE_TIMEOUT || 10000));
-    const res = await fetchWithTimeout(u, init, timeout);
-    const text = await res.text();
-    if(!res.ok){ throw new Error(`${res.status} ${res.statusText} - ${text.slice(0,120)}`); }
-    return JSON.parse(text || "{}");
+    const timeout=(typeof tmo==="number"?tmo:(window.NET?.BASE_TIMEOUT||10000));
+    const res=await fetchWithTimeout(u,init,timeout);
+    const text=await res.text();
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText} - ${text.slice(0,120)}`);
+    return JSON.parse(text||"{}");
   };
 
-  // ★ api: リトライのたびに tmo を引数で渡す（prototypeは使わない）
-  window.api = async function api(fn, method="GET", body=null, opts={}){
-    const timeoutMs = (opts && typeof opts.timeoutMs==="number") ? opts.timeoutMs : window.NET.BASE_TIMEOUT;
-    const retries   = (opts && typeof opts.retries==="number")   ? opts.retries   : window.NET.MAX_RETRIES;
-    const withLoader= (opts && "withLoader" in opts) ? !!opts.withLoader : true;
-
-    if(typeof window.showLoading==="function" && withLoader) showLoading(true);
-    try{
-      for(let attempt=0; attempt<=retries; attempt++){
-        const tmo = timeoutMs * Math.pow(3, attempt); // 10s→30s→90s
-        try{
-          return await window.apiCore(fn, method, body, tmo);
-        }catch(e){
-          if(attempt === retries) throw e;
-          await sleep(window.NET.BACKOFF_MS * (attempt+1));
-        }
+  // api（指数バックオフ＋ローダー）
+  window.api = async function api(fn,method="GET",body=null,opts={}){
+    const timeoutMs=(typeof opts.timeoutMs==="number")?opts.timeoutMs:window.NET.BASE_TIMEOUT;
+    const retries=(typeof opts.retries==="number")?opts.retries:window.NET.MAX_RETRIES;
+    const withLoader=("withLoader" in opts)?!!opts.withLoader:true;
+    const run=(async()=>{
+      for(let a=0;a<=retries;a++){
+        const tmo=timeoutMs*Math.pow(3,a); // 10s→30s→90s
+        try{ return await window.apiCore(fn,method,body,tmo); }
+        catch(e){ if(a===retries) throw e; await sleep(window.NET.BACKOFF_MS*(a+1)); }
       }
-    } finally {
-      if(typeof window.showLoading==="function" && withLoader) showLoading(false);
-    }
+    })();
+    return withLoader?LOADER.wrap(run):run;
   };
 
-  // doLogin の“完全読込後に表示”はそのまま（既存doLoginを尊重して上書き）
-  const origDoLogin = window.doLogin;
-  window.doLogin = async function doLoginPatched(){
-    if(!origDoLogin){ console.warn("doLogin未定義"); return; }
-    try{ await origDoLogin(); }catch(e){ /* 既存が処理 */ }
-    const user = window.store && typeof store.get==="function" ? store.get("user") : null;
-    if(user && user.role!=="vendor"){
-      try{
-        if(typeof showLoading==="function") showLoading(true);
-        await Promise.all([
-          window.loadDashboard ? loadDashboard() : Promise.resolve(),
-          window.loadPublicOverviewAuth ? loadPublicOverviewAuth() : Promise.resolve()
-        ]);
-        const wm = document.querySelector("#welcome-message");
-        if(wm) wm.textContent = `ようこそ、${user.name||user.id}さん`;
-        if(typeof show==="function") show("view-shop");
-      } finally {
-        if(typeof showLoading==="function") showLoading(false);
-      }
-    }
+  // doLogin成功後：完全読込→表示 に統一
+  const origDoLogin=window.doLogin;
+  window.doLogin=async function(){
+    if(!origDoLogin){console.warn("doLogin未定義");return;}
+    try{await origDoLogin();}catch{ return; }
+    const user=window.store?.get?.("user")||null;
+    if(!user||user.role==="vendor")return;
+
+    await LOADER.wrap(Promise.all([
+      window.loadDashboard?loadDashboard():Promise.resolve(),
+      window.loadPublicOverviewAuth?loadPublicOverviewAuth():Promise.resolve()
+    ]));
+    const wm=document.querySelector("#welcome-message");
+    if(wm) wm.textContent=`ようこそ、${user.name||user.id}さん`;
+    if(typeof show==="function") show("view-shop");
   };
 
-  // 自動ログイン済みの初期表示も“完全読込後に表示”
-  document.addEventListener("DOMContentLoaded", async ()=>{
-    const token = window.store && typeof store.get==="function" ? store.get("token") : null;
-    const user  = window.store && typeof store.get==="function" ? store.get("user")  : null;
-    if(!token || !user) return;
-    if(user.role === "vendor") return;
-    try{
-      if(typeof showLoading==="function") showLoading(true);
-      await Promise.all([
-        window.loadDashboard ? loadDashboard() : Promise.resolve(),
-        window.loadPublicOverviewAuth ? loadPublicOverviewAuth() : Promise.resolve()
-      ]);
-      const wm = document.querySelector("#welcome-message");
-      if(wm) wm.textContent = `ようこそ、${user.name||user.id}さん`;
-      if(typeof show==="function") show("view-shop");
-    } finally {
-      if(typeof showLoading==="function") showLoading(false);
-    }
+  // 自動ログイン時も完全読込→表示
+  document.addEventListener("DOMContentLoaded",async()=>{
+    const token=window.store?.get?.("token")||null;
+    const user=window.store?.get?.("user")||null;
+    if(!token||!user||user.role==="vendor")return;
+
+    await LOADER.wrap(Promise.all([
+      quietWrap(window.loadDashboard),
+      quietWrap(window.loadPublicOverviewAuth)
+    ]));
+    const wm=document.querySelector("#welcome-message");
+    if(wm) wm.textContent=`ようこそ、${user.name||user.id}さん`;
+    if(typeof show==="function") show("view-shop");
   });
+
+  // 初回ロードだけ静かに（ローダーOFF）
+  async function quietWrap(fn){
+    if(typeof fn!=="function") return;
+    const origApi=window.api;
+    window.api=(f,m,b,o={})=>origApi(f,m,b,Object.assign({withLoader:false,timeoutMs:10000,retries:1},o));
+    try{ return await fn(); }
+    finally{ window.api=origApi; }
+  }
 })();
 </script>
 
