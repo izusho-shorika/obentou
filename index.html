@@ -1,165 +1,199 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-  <title>高校生を応援📣お弁当注文アプリ</title>
-  <style>
-    :root {
-      --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666;
-      --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05);
-      --radius:10px; --spacing:16px;
-    }
-    *{box-sizing:border-box}
-    html,body{
-      margin:0;background:var(--bg);color:var(--fg);
-      font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
-    }
-    header{position:sticky;top:0;background:var(--card-bg);border-bottom:1px solid var(--line);
-      padding:12px var(--spacing);z-index:10}
-    header h1{font-size:18px;margin:0}
-    main{padding:var(--spacing);max-width:720px;margin:0 auto}
-    .card{background:var(--card-bg);border:1px solid var(--line);border-radius:var(--radius);
-      padding:var(--spacing);margin:0px;box-shadow:var(--shadow)}
-    .row{display:flex;gap:10px;align-items:center}
-    .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    input,select,button,textarea{
-      font-size:16px;padding:12px;border-radius:8px;border:1px solid var(--line);
-      width:100%;margin:8px 0;transition:border-color .2s,background-color .2s,box-shadow .2s
-    }
-    textarea{min-height:120px;resize:vertical}
-    input:focus,select:focus,textarea:focus{
-      border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(74,144,226,.2)
-    }
-    button{background:var(--primary);color:#fff;border:none;font-weight:600;cursor:pointer}
-    button:hover{background:var(--primary-dark)}
-    button:active{background:var(--primary-dark);transform:scale(.99)}
-    button.ghost{background:#f1f5f9;color:var(--fg);border:1px solid var(--line)}
-    button.ghost:hover{background:#e2e8f0}
-    .danger{background:#d32f2f}.danger:hover{background:#c62828}
-    .list{display:flex;flex-direction:column;gap:10px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-    .list .item,.grid .item{
-      background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;
-      transition:border-color .2s,box-shadow .2s;cursor:pointer
-    }
-    .list .item:hover,.grid .item:hover{border-color:var(--primary)}
-    .list .item.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(74,144,226,.3)}
-    .muted{color:var(--muted);font-size:12px}
-    .price{font-variant-numeric:tabular-nums;font-weight:600;color:var(--primary-dark)}
-    .total{font-weight:700;font-size:20px;color:var(--fg)}
-    .hidden{display:none!important}
-    .center{text-align:center}
-    .footer-actions{position:sticky;bottom:0;background:var(--card-bg);border-top:1px solid var(--line);padding:12px var(--spacing)}
-    .tag{display:inline-block;background:#e6f0ff;color:var(--primary-dark);border-radius:999px;padding:4px 10px;font-size:12px;margin-left:8px}
-    .spacer{height:16px}
-    #btn-back-shop{width:auto!important;padding:8px 12px;font-size:14px;margin:0}
-    #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:9999;
-      display:flex;justify-content:center;align-items:center;flex-direction:column;
-      font-size:20px;color:var(--primary-dark);font-weight:bold}
-    .spinner{border:4px solid #f3f3f3;border-top:4px solid var(--primary);border-radius:50%;
-      width:40px;height:40px;margin-bottom:10px;animation:spin 1s linear infinite}
-    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-    .cal-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-    .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    @media (max-width:640px){
-      .cal-grid {grid-template-columns:1fr;}
-      .vendor-kpi {grid-template-columns:1fr;}
-      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-      .table-wrap table{min-width:auto;}
-    }
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <title>高校生を応援📣お弁当注文アプリ</title>
+  <style>
+    :root {
+      --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666;
+      --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05);
+      --radius:10px; --spacing:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;background:var(--bg);color:var(--fg);
+      font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    }
+    header{position:sticky;top:0;background:var(--card-bg);border-bottom:1px solid var(--line);
+      padding:12px var(--spacing);z-index:10}
+    header h1{font-size:18px;margin:0}
+    main{padding:var(--spacing);max-width:720px;margin:0 auto}
+    .card{background:var(--card-bg);border:1px solid var(--line);border-radius:var(--radius);
+      padding:var(--spacing);margin:0px;box-shadow:var(--shadow)}
+    .row{display:flex;gap:10px;align-items:center}
+    .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    input,select,button,textarea{
+      font-size:16px;padding:12px;border-radius:8px;border:1px solid var(--line);
+      width:100%;margin:8px 0;transition:border-color .2s,background-color .2s,box-shadow .2s
+    }
+    textarea{min-height:120px;resize:vertical}
+    input:focus,select:focus,textarea:focus{
+      border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(74,144,226,.2)
+    }
+    button{background:var(--primary);color:#fff;border:none;font-weight:600;cursor:pointer}
+    button:hover{background:var(--primary-dark)}
+    button:active{background:var(--primary-dark);transform:scale(.99)}
+    button.ghost{background:#f1f5f9;color:var(--fg);border:1px solid var(--line)}
+    button.ghost:hover{background:#e2e8f0}
+    .danger{background:#d32f2f}.danger:hover{background:#c62828}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+    .list .item,.grid .item{
+      background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;
+      transition:border-color .2s,box-shadow .2s;cursor:pointer
+    }
+    .list .item:hover,.grid .item:hover{border-color:var(--primary)}
+    .list .item.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(74,144,226,.3)}
+    .muted{color:var(--muted);font-size:12px}
+    .price{font-variant-numeric:tabular-nums;font-weight:600;color:var(--primary-dark)}
+    .total{font-weight:700;font-size:20px;color:var(--fg)}
+    .hidden{display:none!important}
+    .center{text-align:center}
+    .footer-actions{position:sticky;bottom:0;background:var(--card-bg);border-top:1px solid var(--line);padding:12px var(--spacing)}
+    .tag{display:inline-block;background:#e6f0ff;color:var(--primary-dark);border-radius:999px;padding:4px 10px;font-size:12px;margin-left:8px}
+    .spacer{height:16px}
+    #btn-back-shop{width:auto!important;padding:8px 12px;font-size:14px;margin:0}
+    #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:9999;
+      display:flex;justify-content:center;align-items:center;flex-direction:column;
+      font-size:20px;color:var(--primary-dark);font-weight:bold}
+    .spinner{border:4px solid #f3f3f3;border-top:4px solid var(--primary);border-radius:50%;
+      width:40px;height:40px;margin-bottom:10px;animation:spin 1s linear infinite}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+    .cal-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
-    /* 履歴カードの枠色（カード型のまま） */
-    .order-card{border-width:2px;}
-    .order-pending{border-color:#3b82f6;}  /* 青=取消可 */
-    .order-confirmed{border-color:#ef4444;}/* 赤=取消不可 */
+    /* 受注状況テーブルの修正 */
+    #view-vendor table {
+      table-layout: fixed; /* カラム幅を制御しやすくする */
+      width: 100%; /* 親要素の幅いっぱいにする */
+      border-collapse: collapse;
+    }
+    /* ヘッダーとデータセル共通のスタイル調整 */
+    #view-vendor th, #view-vendor td {
+      padding: 8px 6px; /* パディングを少し調整 */
+      white-space: nowrap; /* テキストが折り返さないように */
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* 品目別集計 (.vendor-table-byitem) のアライメントと幅 */
+    .vendor-table-byitem th:nth-child(1),
+    .vendor-table-byitem td:nth-child(1) { text-align: left;  width: auto; } /* 品目名: 左揃え (可変幅) */
+    .vendor-table-byitem th:nth-child(2),
+    .vendor-table-byitem td:nth-child(2) { text-align: right; width: 60px; } /* 数量: 右揃え (2桁想定) */
+    .vendor-table-byitem th:nth-child(3),
+    .vendor-table-byitem td:nth-child(3) { text-align: center; width: 80px; } /* 金額: 中央揃え (4桁想定) */
 
-    /* お知らせ（共通カード） */
-    .notice-title{font-weight:700;cursor:pointer}
-    .notice-body{margin-top:6px;font-size:14px;line-height:1.6;display:none;white-space:pre-wrap}
-    .notice-item{border-left:4px solid #e6f0ff;padding-left:8px}
+    /* 注文詳細 (.vendor-table-rows) のアライメントと幅 */
+    .vendor-table-rows th:nth-child(1),
+    .vendor-table-rows td:nth-child(1) { text-align: left; width: 80px; } /* ユーザーID: 左揃え (固定幅) */
+    .vendor-table-rows th:nth-child(2),
+    .vendor-table-rows td:nth-child(2) { text-align: left; width: auto; } /* 品目名: 左揃え (可変幅) */
+    .vendor-table-rows th:nth-child(3),
+    .vendor-table-rows td:nth-child(3) { text-align: right; width: 60px; } /* 数量: 右揃え (2桁想定) */
+    .vendor-table-rows th:nth-child(4),
+    .vendor-table-rows td:nth-child(4) { text-align: center; width: 80px; } /* 金額: 中央揃え (4桁想定) */
 
-    /* ベンダーお知らせオプション行 */
-    .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    .row-wrap>label{display:flex;gap:6px;align-items:center}
-    .row-wrap>label>input[type="date"]{width:auto}
-    @media (max-width:640px){.row-wrap>label{flex:1 1 180px}}
+    @media (max-width:640px){
+      .cal-grid {grid-template-columns:1fr;}
+      .vendor-kpi {grid-template-columns:1fr;}
+      /* ▼ レスポンシブ修正: 横スクロールを強制しない */
+      .table-wrap{overflow-x:hidden;}
+      .table-wrap table{min-width:unset!important;}
+      /* ▲ レスポンシブ修正終わり */
+    }
 
-    /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
-    #view-login .status-grid, #view-login .status-row,
-    #view-shop .status-grid,  #view-shop .status-row{
-      display:grid;
-      grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
-      gap:10px; align-items:center;
-    }
-    @media (max-width:640px){
-      #view-login .status-grid, #view-login .status-row,
-      #view-shop .status-grid,  #view-shop .status-row{
-        grid-template-columns: 1fr 60px 60px 60px;
-      }
-    }
-    /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
-    #status-header > div:not(:first-child),
-    #status-header-auth > div:not(:first-child){ text-align:right; }
-    /* ◯×セルは中央寄せ */
-    #view-login .status-row > div:nth-child(n+2),
-    #view-shop  .status-row > div:nth-child(n+2){ text-align:center; }
+    /* 履歴カードの枠色（カード型のまま） */
+    .order-card{border-width:2px;}
+    .order-pending{border-color:#3b82f6;}  /* 青=取消可 */
+    .order-confirmed{border-color:#ef4444;}/* 赤=取消不可 */
 
-    /* 長い店名を1行省略、縦に伸びない */
-    #view-login .shop-chip, #view-shop .shop-chip{
-      display:grid;
-      grid-template-columns: 28px 1fr; /* アバター + 店名 */
-      align-items:center;
-      gap:8px;
-      min-width:0;
-    }
-    #view-login .shop-name, #view-shop .shop-name{
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      min-width:0;
-    }
+    /* お知らせ（共通カード） */
+    .notice-title{font-weight:700;cursor:pointer}
+    .notice-body{margin-top:6px;font-size:14px;line-height:1.6;display:none;white-space:pre-wrap}
+    .notice-item{border-left:4px solid #e6f0ff;padding-left:8px}
 
-    /* そのほかログイン画面の既存スタイル */
-    #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
-    #view-login .badge-ok, #view-shop .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
-    #view-login .badge-ng, #view-shop .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
-    #view-login .shop-avatar, #view-shop .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
-    #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
-    #view-login .news-title{font-weight:700;line-height:1.5}
-    #view-login .news-date{font-size:12px;color:#667085}
-  
-    /* --- 履歴カードをコンパクトに（view-shop内のみ） --- */
+    /* ベンダーお知らせオプション行 */
+    .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .row-wrap>label{display:flex;gap:6px;align-items:center}
+    .row-wrap>label>input[type="date"]{width:auto}
+    @media (max-width:640px){.row-wrap>label{flex:1 1 180px}}
+
+    /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
+    #view-login .status-grid, #view-login .status-row,
+    #view-shop .status-grid,  #view-shop .status-row{
+      display:grid;
+      grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
+      gap:10px; align-items:center;
+    }
+    @media (max-width:640px){
+      #view-login .status-grid, #view-login .status-row,
+      #view-shop .status-grid,  #view-shop .status-row{
+        grid-template-columns: 1fr 60px 60px 60px;
+      }
+    }
+    /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
+    #status-header > div:not(:first-child),
+    #status-header-auth > div:not(:first-child){ text-align:right; }
+    /* ◯×セルは中央寄せ */
+    #view-login .status-row > div:nth-child(n+2),
+    #view-shop  .status-row > div:nth-child(n+2){ text-align:center; }
+
+    /* 長い店名を1行省略、縦に伸びない */
+    #view-login .shop-chip, #view-shop .shop-chip{
+      display:grid;
+      grid-template-columns: 28px 1fr; /* アバター + 店名 */
+      align-items:center;
+      gap:8px;
+      min-width:0;
+    }
+    #view-login .shop-name, #view-shop .shop-name{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      min-width:0;
+    }
+
+    /* そのほかログイン画面の既存スタイル */
+    #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
+    #view-login .badge-ok, #view-shop .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
+    #view-login .badge-ng, #view-shop .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
+    #view-login .shop-avatar, #view-shop .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
+    #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
+    #view-login .news-title{font-weight:700;line-height:1.5}
+    #view-login .news-date{font-size:12px;color:#667085}
+  
+    /* --- 履歴カードをコンパクトに（view-shop内のみ） --- */
 #view-shop .history-compact .item{
-  padding:10px;
+  padding:10px;
 }
 #view-shop .history-compact h4{
-  font-size:14px; margin:0;
+  font-size:14px; margin:0;
 }
 #view-shop .history-compact .muted{
-  font-size:12px;
+  font-size:12px;
 }
 #view-shop .history-compact .price{
-  font-size:14px;
+  font-size:14px;
 }
 .visually-hidden {
-  position: absolute;
-  width: 1px; height: 1px;
-  margin: -1px; padding: 0; border: 0;
-  clip: rect(0 0 0 0);
-  overflow: hidden;
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip: rect(0 0 0 0);
+  overflow: hidden;
 }
-</style>
+  </style>
 </head>
 <body>
 <header><h1 class="visually-hidden">高校生を応援📣お弁当注文アプリ<span id="app-version" class="tag"></span></h1></header>
 
 <main>
-  <!-- ログイン -->
- <section id="view-login" class="card">
+  <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です00</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
@@ -169,23 +203,19 @@
   <p id="login-error" class="muted center"></p>
 </section>
 
-  <!-- 生徒（ログイン後） -->
   <section id="view-shop" class="hidden">
     <h3 id="welcome-message" style="margin-top:0;font-weight:normal"></h3>
 
-    <!-- 弁当屋を選択 -->
     <div class="card">
       <h3 style="margin-top:0">お店を選ぶ</h3>
       <div id="shop-cards" class="list"></div>
     </div>
 
-    <!-- 購入履歴 -->
     <div class="card">
       <h3 style="margin-top:0">最近の注文（最新2件）</h3>
       <div id="history-list" class="list"></div>
     </div>
 
-    <!-- 営業情報（ログイン後用：auth） -->
     <div id="public-status-card-auth" class="card">
       <div class="row-between">
         <h3 style="margin:0">営業情報</h3>
@@ -202,7 +232,6 @@
       <p id="status-empty-auth" class="muted" style="margin:8px 0 0 0;display:none">現在、表示できる店舗がありません。</p>
     </div>
 
-    <!-- 新着情報（ログイン後用：auth：最新1件のみ表示、本文展開） -->
     <div id="public-news-card-auth" class="card">
       <div class="row-between">
         <h3 style="margin:0">新着情報</h3>
@@ -215,9 +244,7 @@
     <div class="footer-actions row"><button class="ghost" id="btn-logout">ログアウト</button></div>
   </section>
 
-  <!-- メニュー（生徒） -->
   <section id="view-menu" class="hidden">
-    <!-- お店からのお知らせ -->
     <div id="notice-card" class="card hidden">
       <h3 style="margin-top:0">お店からのお知らせ</h3>
       <div id="notice-list" class="list"></div>
@@ -246,7 +273,6 @@
     </div>
   </section>
 
-  <!-- 完了 -->
   <section id="view-done" class="hidden card center">
     <h2>🎉 注文を確定しました</h2>
     <div class="spacer"></div>
@@ -255,7 +281,6 @@
     <button id="btn-finish" class="danger">終了（ログアウトして戻る）</button>
   </section>
 
-  <!-- 店側 -->
   <section id="view-vendor" class="hidden">
     <div class="card">
       <h3 id="vendor-title" style="margin:0">受注状況</h3>
@@ -270,8 +295,8 @@
     <div class="card">
       <h3 style="margin:0">品目別集計</h3>
       <div class="table-wrap">
-        <table style="width:100%;border-collapse:collapse;margin-top:8px">
-          <thead><tr><th>品目</th><th style="width:90px">数量</th><th style="width:120px">金額</th></tr></thead>
+        <table class="vendor-table-byitem" style="width:100%;border-collapse:collapse;margin-top:8px">
+          <thead><tr><th>品目</th><th>数量</th><th>金額</th></tr></thead>
           <tbody id="vendor-byitem"></tbody>
         </table>
       </div>
@@ -281,15 +306,14 @@
     <div class="card">
       <h3 style="margin:0">注文詳細</h3>
       <div class="table-wrap">
-        <table style="width:100%;border-collapse:collapse;margin-top:8px">
-          <thead><tr><th style="width:120px">ユーザーID</th><th>品目</th><th style="width:70px">数量</th><th style="width:120px">金額</th></tr></thead>
+        <table class="vendor-table-rows" style="width:100%;border-collapse:collapse;margin-top:8px">
+          <thead><tr><th>ユーザーID</th><th>品目</th><th>数量</th><th>金額</th></tr></thead>
           <tbody id="vendor-rows"></tbody>
         </table>
       </div>
       <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">注文がありません。</p>
     </div>
 
-    <!-- お店からのお知らせ（入力＆最新3件） -->
     <div class="card">
       <h3 style="margin:0">お店からのお知らせ（投稿）</h3>
       <p class="muted" style="margin:6px 0 8px 0">プレーンテキスト＋改行のみ（URLは自動リンクされます）</p>
@@ -314,7 +338,6 @@
       <p id="vendor-msg-empty" class="muted" style="margin:6px 0 0 0">まだお知らせはありません。</p>
     </div>
 
-    <!-- 定休日設定 -->
     <div class="card">
       <h3 style="margin:0">定休日の設定</h3>
       <p class="muted" style="margin:6px 0 12px 0">当月と翌月の休業日を選択し、「保存」で反映します（丸ごと上書き）。</p>
@@ -352,7 +375,7 @@ const store={ set(k,v){localStorage.setItem(k,JSON.stringify(v))}, get(k,d=null)
 const cache={
   get(key, ttlSec){ const raw=localStorage.getItem(`cache:${key}`); if(!raw) return null; try{ const {t,v}=JSON.parse(raw); if(Date.now()-t>ttlSec*1000) return null; return v; }catch{ return null; } },
   set(key, value){ localStorage.setItem(`cache:${key}`, JSON.stringify({t: Date.now(), v:value})) },
-  del(key){ localStorage.removeItem(`cache:${key}`) }
+  del(key){ localStorage.removeItem(key) }
 };
 
 /* =========================
@@ -1063,9 +1086,10 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     if(!origDoLogin){ console.warn("doLogin未定義"); return; }
     try{ await origDoLogin(); }catch(e){ /* 既存が処理 */ }
     const user = window.store && typeof store.get==="function" ? store.get("user") : null;
-    if(user && user.role!=="vendor"){
+    if(user && !/^s\d+$/i.test(user.id)){ // ベンダー以外（生徒）
       try{
         if(typeof showLoading==="function") showLoading(true);
+        // ダッシュボードと公開情報がまだ読み込まれていない場合は読み込む
         await Promise.all([
           window.loadDashboard ? loadDashboard() : Promise.resolve(),
           window.loadPublicOverviewAuth ? loadPublicOverviewAuth() : Promise.resolve()
@@ -1084,7 +1108,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     const token = window.store && typeof store.get==="function" ? store.get("token") : null;
     const user  = window.store && typeof store.get==="function" ? store.get("user")  : null;
     if(!token || !user) return;
-    if(user.role === "vendor") return;
+    if(/^s\d+$/i.test(user.id)) return; // ベンダーは既存処理に任せる
     try{
       if(typeof showLoading==="function") showLoading(true);
       await Promise.all([
