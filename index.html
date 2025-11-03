@@ -149,6 +149,52 @@
   clip: rect(0 0 0 0);
   overflow: hidden;
 }
+/* ... (既存のスタイル) ... */
+
+    /* 品目別集計 (vendor-byitem) のテーブルスタイル調整 */
+    #view-vendor #vendor-byitem + .table-wrap table thead th:nth-child(1),
+    #view-vendor #vendor-byitem + .table-wrap table tbody td:nth-child(1) {
+      text-align: left; /* 品目: 左揃え */
+    }
+    #view-vendor #vendor-byitem + .table-wrap table thead th:nth-child(2),
+    #view-vendor #vendor-byitem + .table-wrap table tbody td:nth-child(2) {
+      width: 50px; /* 数量（最大2桁）: 固定幅を削減 */
+      text-align: right; /* 数量: 右揃え */
+    }
+    #view-vendor #vendor-byitem + .table-wrap table thead th:nth-child(3),
+    #view-vendor #vendor-byitem + .table-wrap table tbody td:nth-child(3) {
+      width: 70px; /* 金額（最大4桁）: 固定幅を削減 */
+      text-align: center; /* 金額: 中央揃え */
+    }
+
+    /* 注文詳細 (vendor-rows) のテーブルスタイル調整 */
+    #view-vendor #vendor-rows + .table-wrap table thead th:nth-child(1),
+    #view-vendor #vendor-rows + .table-wrap table tbody td:nth-child(1) {
+      width: 100px; /* ユーザーID: 固定幅を削減 */
+      text-align: left; /* ユーザーID: 左揃え */
+    }
+    #view-vendor #vendor-rows + .table-wrap table thead th:nth-child(2),
+    #view-vendor #vendor-rows + .table-wrap table tbody td:nth-child(2) {
+      text-align: left; /* 品目: 左揃え */
+    }
+    #view-vendor #vendor-rows + .table-wrap table thead th:nth-child(3),
+    #view-vendor #vendor-rows + .table-wrap table tbody td:nth-child(3) {
+      width: 50px; /* 数量（最大2桁）: 固定幅を削減 */
+      text-align: right; /* 数量: 右揃え */
+    }
+    #view-vendor #vendor-rows + .table-wrap table thead th:nth-child(4),
+    #view-vendor #vendor-rows + .table-wrap table tbody td:nth-child(4) {
+      width: 70px; /* 金額（最大4桁）: 固定幅を削減 */
+      text-align: center; /* 金額: 中央揃え */
+    }
+
+    /* @media (max-width:640px) 内のテーブル幅を削除し、再計算させる */
+    @media (max-width:640px){
+      .cal-grid {grid-template-columns:1fr;}
+      .vendor-kpi {grid-template-columns:1fr;}
+      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+      .table-wrap table{min-width:auto; /* ← 修正・変更点: スクロールを回避するため min-width 指定を削除 */ }
+    }
   </style>
 </head>
 <body>
@@ -159,7 +205,7 @@
  <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です00</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
