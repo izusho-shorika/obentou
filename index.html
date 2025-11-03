@@ -244,6 +244,46 @@
   /* 以前つけた“横スクロールの気づきグラデーション”があれば消す */
   #view-vendor .table-wrap::after{ display:none !important; }
 }
+/* ========== 1) 品目別集計：見出しの揃えだけ変更（中身はそのまま） ========== */
+/* 「数量」見出しを右寄せ、「金額」見出しを中央寄せ。数値(td)の揃えは現状維持 */
+#view-vendor #vendor-byitem:where(thead tr th:nth-child(2)){ text-align:right;  }
+#view-vendor #vendor-byitem:where(thead tr th:nth-child(3)){ text-align:center; }
+
+/* ========== 2) 注文詳細：列幅＆揃えの最適化 ========== */
+/* 共通：固定レイアウトで列幅を効かせる／フォント少し小さめ（この表だけ） */
+#view-vendor .table-wrap table{ table-layout:fixed; }
+#view-vendor #vendor-rows{ font-size:.95em; }
+
+/* 品目の列幅を「品目別集計の品目」と同じ比率に固定（例：40%）
+   必要なら % をお好みで微調整してください（両表に同じ比率が効きます） */
+#view-vendor #vendor-byitem th:nth-child(1),
+#view-vendor #vendor-byitem td:nth-child(1){ width:40%; }  /* 品目（集計） */
+#view-vendor #vendor-rows  th:nth-child(2),
+#view-vendor #vendor-rows  td:nth-child(2){ width:40%; }  /* 品目（注文詳細） */
+
+/* 品目名が入りきらない時は省略記号（CSS標準の … ）でカットして1行に */
+#view-vendor #vendor-rows td:nth-child(2){
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;
+}
+
+/* 数量：最小限の幅（2桁想定）。見出しは右寄せ、値は中央寄せ */
+#view-vendor #vendor-rows th:nth-child(3){ text-align:right; }
+#view-vendor #vendor-rows td:nth-child(3){
+  width:3.2ch;                 /* 2桁＋余白ぶん。必要なら 3.6ch などに */
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+
+/* 金額：4桁想定で狭めの幅。見出しは中央寄せ、値は右寄せ */
+#view-vendor #vendor-rows th:nth-child(4){ text-align:center; }
+#view-vendor #vendor-rows td:nth-child(4){
+  width:6.2ch;                 /* 4桁＋記号/カンマの余裕。端末に応じて調整可 */
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+
 
 
 /* チェックボックスの幅は自動（横幅100%化を防止） */
