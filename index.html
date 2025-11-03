@@ -145,21 +145,24 @@
   </style>
 </head>
 <body>
-<header></header>
+<header>
+  <h1 class="visually-hidden">高校生を「食」で応援 お弁当注文アプリ</h1>
+</header>
 
 <main> 
-  <!-- ログイン -->
- <section id="view-login" class="card">
-  <img src="logo.png">
-  <h3 style="margin-top:0">ログイン</h3>
-  <div style="padding-top:10px">
-    <input id="login-id" placeholder="ログインID（例：20251101）">
-    <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
-  </div>
-  <div class="spacer"></div>
-  <button id="btn-login">ログイン</button>
-  <p id="login-error" class="muted center"></p>
-</section>
+ <!-- ログイン -->
+  <section id="view-login" class="card center">
+    <!-- ロゴ画像を上部に配置 -->
+    <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ" style="max-width:90%;height:auto;margin-bottom:16px;">
+    <h3 style="margin-top:0">ログイン</h3>
+    <div style="padding-top:10px">
+      <input id="login-id" placeholder="ログインID（例：20251101）">
+      <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
+    </div>
+    <div class="spacer"></div>
+    <button id="btn-login">ログイン</button>
+    <p id="login-error" class="muted center"></p>
+  </section>
 
   <!-- 生徒（ログイン後） -->
   <section id="view-shop" class="hidden">
