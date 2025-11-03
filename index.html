@@ -77,7 +77,6 @@
   .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
   .row-wrap>label{display:flex;gap:6px;align-items:center}
   .row-wrap>label>input[type="date"]{width:auto}
-  /* @media (max-width:640px){.row-wrap>label{flex:1 1 180px}} ← 元コードのflex:1 1 180pxを削除するため、一旦コメントアウト */
 
   /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
   #view-login .status-grid, #view-login .status-row,
@@ -85,12 +84,6 @@
     display:grid;
     grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
     gap:10px; align-items:center;
-  }
-  @media (max-width:640px){
-    #view-login .status-grid, #view-login .status-row,
-    #view-shop .status-grid,  #view-shop .status-row{
-      grid-template-columns: 1fr 60px 60px 60px;
-    }
   }
   /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
   #status-header > div:not(:first-child),
@@ -159,7 +152,7 @@
   /* 数量（2列目）と金額（3列目）のデータセルを右揃えにする */
   #vendor-byitem td:nth-child(2),
   #vendor-byitem td:nth-child(3){
-    text-align: right !important; /* !important で確実に右揃え */
+    text-align: right !important; 
   }
   /* ヘッダーの揃え方（元HTMLを尊重） */
   #vendor-byitem th:nth-child(1){ width: auto; }
@@ -171,7 +164,7 @@
   /* 数量（3列目）と金額（4列目）のデータセルを右揃えにする */
   #vendor-rows td:nth-child(3),
   #vendor-rows td:nth-child(4){
-    text-align: right !important; /* !important で確実に右揃え */
+    text-align: right !important; 
   }
   /* ヘッダーの揃え方（元HTMLを尊重） */
   #vendor-rows th:nth-child(1){ width: 120px; }
@@ -189,9 +182,7 @@
     
     /* 狭い画面ではテーブルの横スクロールを発生させない */
     .table-wrap{
-      /* 元のCSSでは overflow-x:auto;-webkit-overflow-scrolling:touch; で横スクロールを許容していたが、
-         テーブル幅が小さすぎるため、ここでは固定幅指定とします */
-      overflow-x:hidden !important; /* 強制的に横スクロールを禁止 */
+      overflow-x:hidden !important;
     }
     .table-wrap table{
       min-width: 100% !important;
@@ -216,15 +207,14 @@
         min-width: 100px;
     }
     
-    /* 3. 【最終修正】2番目のラベル（「有効」）を左寄せにし、はみ出しを解消 */
+    /* 3. 【最終修正】2番目のラベル（「有効」）の幅問題を解消 */
     .row-wrap>label:nth-child(2){
-      /* Flexboxアイテムのサイズ調整を無効化し、コンテンツ幅を尊重 */
-      flex-grow: 0; 
-      flex-shrink: 0; 
-      /* content-size を優先し、親の横幅を超えないよう max-width: 100% を追加 */
+      /* 親の flex: 1 1 100% の設定を上書きし、コンテンツ幅のみを使用する */
+      flex: 0 0 auto; 
+      /* チェックボックスとテキストに合わせた幅に固定する */
       width: auto;
       max-width: 100%;
-      justify-content: flex-start; /* 左寄せ */
+      justify-content: flex-start; /* 左寄せを確実にする */
     }
 
     /* ログイン画面／ログイン後の営業情報（狭幅） */
