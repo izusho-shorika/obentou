@@ -393,7 +393,7 @@ async function apiCore(fn,method="GET",body=null){
   if(!r.ok){ throw new Error(`${r.status} ${r.statusText} - ${text.slice(0,120)}`); }
   return JSON.parse(text);
 }
-async function api(fn,method="GET",body=null,{timeoutMs=7000,retries=1,withLoader=true}={}){
+async function api(fn,method="GET",body=null,{timeoutMs=10000,retries=1,withLoader=true}={}){
   if(withLoader) showLoading(true);
   try{
     for(let attempt=0; attempt<=retries; attempt++){
@@ -437,8 +437,8 @@ async function loadPublicOverview(force=false){
   });
 
   // キャッシュ即時描画（60秒）
-  const cOverview=cache.get('public_overview',60); if(cOverview) renderOverview(cOverview);
-  const cNews=cache.get('latest_news',60);       if(cNews)     renderNews(cNews);
+  const cOverview=cache.get('public_overview',300); if(cOverview) renderOverview(cOverview);
+  const cNews=cache.get('latest_news',300);       if(cNews)     renderNews(cNews);
 
   // 最新取得
   try{ const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('public_overview',d); renderOverview(d);}catch(e){}
@@ -503,8 +503,8 @@ async function loadPublicOverviewAuth(force=false){
   });
 
   // キャッシュ即時描画（60秒）
-  const cOverview=cache.get('public_overview',60); if(cOverview) renderOverviewAuth(cOverview);
-  const cNews=cache.get('latest_news',60);       if(cNews)     renderNewsAuth(cNews);
+  const cOverview=cache.get('public_overview',300); if(cOverview) renderOverviewAuth(cOverview);
+  const cNews=cache.get('latest_news',300);       if(cNews)     renderNewsAuth(cNews);
 
   // 最新取得
   try{ const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('public_overview',d); renderOverviewAuth(d);}catch(e){}
@@ -691,7 +691,7 @@ async function loadDashboard(){
       btn.onclick=async()=>{
         if(!confirm('この注文を取り消します。よろしいですか？')) return;
         try{
-          const res=await api('cancel_order','POST',{order_id:h.order_id},{timeoutMs:6000,retries:0});
+          const res=await api('cancel_order','POST',{order_id:h.order_id},{timeoutMs:10000,retries:0});
           if(res.ok){ card.remove(); } else { alert(res.error||'取消に失敗しました'); }
         }catch(e){ alert('通信エラー：'+e.message); }
       };
@@ -720,8 +720,8 @@ async function enterMenu(){
   showLoading(true);
   try{
     const [msgRes, menuRes] = await Promise.all([
-      api('messages','GET',{shop_id:sid},{withLoader:false,timeoutMs:7000,retries:0}),
-      api('menu','GET',{shop_id:sid},{withLoader:false,timeoutMs:7000,retries:0})
+      api('messages','GET',{shop_id:sid},{withLoader:false,timeoutMs:15000,retries:0}),
+      api('menu','GET',{shop_id:sid},{withLoader:false,timeoutMs:15000,retries:0})
     ]);
 
     const list = msgRes.ok ? (msgRes.list||[]) : [];
@@ -883,7 +883,7 @@ const VendorMessages={
     const vu=$('#msg-visible-until').value;
     const enabled=$('#msg-enabled').checked;
     if(!title||!body){ $('#msg-status').textContent='タイトルと内容は必須です。'; return; }
-    const res=await api('save_message','POST',{title,body,visible_until:vu||'',enabled},{timeoutMs:8000,retries:0});
+    const res=await api('save_message','POST',{title,body,visible_until:vu||'',enabled},{timeoutMs:10000,retries:0});
     if(res.ok){
       $('#msg-status').textContent='保存しました。生徒画面は再読込で即反映されます。';
       $('#msg-title').value=''; $('#msg-body').value=''; setDefaultVisibleUntil(); $('#msg-enabled').checked=true;
@@ -1028,7 +1028,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
       init = { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"}, body:f };
     }
 
-    const timeout = (typeof tmo === "number" ? tmo : (window.NET?.BASE_TIMEOUT || 10000));
+    const timeout = (typeof tmo === "number" ? tmo : (window.NET?.BASE_TIMEOUT || 20000));
     const res = await fetchWithTimeout(u, init, timeout);
     const text = await res.text();
     if(!res.ok){ throw new Error(`${res.status} ${res.statusText} - ${text.slice(0,120)}`); }
