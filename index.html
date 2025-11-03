@@ -148,16 +148,60 @@
 <header><h1>高校生を応援📣お弁当注文アプリ<span id="app-version" class="tag"></span></h1></header>
 
 <main>
-  <!-- ログイン -->
- <section id="view-login" class="card">
-  <h3 style="margin-top:0">ログイン</h3>
-  <div style="padding-top:10px">
-    <input id="login-id" placeholder="ログインID（例：20251101）">
-    <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
+ <!-- ログイン（Fresh Lunch風・既存IDはそのまま） -->
+<section id="view-login" class="fl-wrap">
+  <div class="fl-brand">
+    <!-- 必要なら画像ロゴに変更：<img src="img/logo.png" alt="ロゴ" class="fl-logo" /> -->
+    <div class="fl-logo">BL</div>
+    <h1 style="font-size:18px;margin:0;color:#111">お弁当注文</h1>
   </div>
-  <div class="spacer"></div>
-  <button id="btn-login">ログイン</button>
-  <p id="login-error" class="muted center"></p>
+
+  <div class="fl-card">
+    <div class="fl-hero" aria-hidden="true"></div>
+
+    <h2 class="fl-title">ログイン</h2>
+    <p class="fl-sub">配布されたIDと4桁パスワードを入力してください。</p>
+
+    <div class="fl-field">
+      <label class="fl-label" for="login-id">ログインID</label>
+      <input id="login-id" class="fl-input" placeholder="例：20251101">
+    </div>
+
+    <div class="fl-field">
+      <label class="fl-label" for="login-pass">パスワード（4桁）</label>
+      <input id="login-pass" class="fl-input" type="password" inputmode="numeric" placeholder="1234" maxlength="4">
+    </div>
+
+    <div class="fl-row fl-field">
+      <button id="btn-login" class="fl-btn fl-btn-primary" type="button">ログイン</button>
+    </div>
+
+    <p id="login-error" class="err" style="display:none"></p>
+    <script>
+      // 既存の doLogin() はそのまま使用
+      // エラー表示の挙動だけ、空文字と非表示を両対応
+      (function(){
+        const e = document.getElementById('login-error');
+        const orig = console.error;
+        // doLogin内のエラー文言セット後に display を自動ON
+        const showErr = (msg)=>{
+          if(!e) return;
+          e.textContent = msg || 'ログインに失敗しました。';
+          e.style.display = 'block';
+        };
+        // 既存のIDチェックにフック
+        const _setText = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'textContent').set;
+        Object.defineProperty(e, 'textContent', {
+          set(val){ _setText.call(this,val); if(val && String(val).trim()) this.style.display='block'; },
+          get(){ return '' }
+        });
+        // 画面初期化時は非表示
+        e.style.display = 'none';
+      })();
+    </script>
+
+    <p class="fl-hint">※ この画面では個人情報を入力しません。ログイン情報は安全に取り扱われます。</p>
+  </div>
 </section>
 
   <!-- 生徒（ログイン後） -->
@@ -330,7 +374,7 @@
 /* =========================
    基本情報
 ========================= */
-const APP_VERSION="v2.5.5";
+const APP_VERSION="v2.5.6";
 const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbyFY9CJ0SgOuzgdfoworTmJr1ngnum3eJ_mZozdAfYKsSiZH8jTZ18onzGwtTkM80ajkg/exec"; // ← あなたのGAS /exec に差し替え
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
