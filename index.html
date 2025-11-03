@@ -159,7 +159,7 @@
  <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です01</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
@@ -606,7 +606,7 @@ async function doLogin(){
 
   try{
     // タイムアウト短縮・リトライなしでキビキビ
-    const d=await api("login","POST",{id,password:pass},{timeoutMs:5000,retries:0});
+    const d=await api("login","POST",{id,password:pass},{timeoutMs:20000,retries:0});
     if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
 
     store.set("token",d.token); store.set("user",d.user);
@@ -643,7 +643,7 @@ async function doLogin(){
 ========================= */
 // ▼ 差し替え：履歴2件・コンパクト描画
 async function loadDashboard(){
-  const d=await api("dashboard","GET",null,{timeoutMs:6000,retries:0});
+  const d=await api("dashboard","GET",null,{timeoutMs:15000,retries:0});
   state.shops=d.shops||[];
 
   // 店リスト（カード）
@@ -996,7 +996,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
 /* ====== 安定化パッチ（apiを引数渡し方式に修正） ====== */
 (function(){
   // 既存NETがなければ定義
-  window.NET = window.NET || { BASE_TIMEOUT: 15000, MAX_RETRIES: 2, BACKOFF_MS: 1200 };
+  window.NET = window.NET || { BASE_TIMEOUT: 20000, MAX_RETRIES: 2, BACKOFF_MS: 1200 };
 
   function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
