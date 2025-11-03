@@ -4,225 +4,224 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <title>高校生を応援📣お弁当注文アプリ</title>
-<style>
-  :root {
-    --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666;
-    --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05);
-    --radius:10px; --spacing:16px;
-  }
-  *{box-sizing:border-box}
-  html,body{
-    margin:0;background:var(--bg);color:var(--fg);
-    font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
-  }
-  header{position:sticky;top:0;background:var(--card-bg);border-bottom:1px solid var(--line);
-    padding:12px var(--spacing);z-index:10}
-  header h1{font-size:18px;margin:0}
-  main{padding:var(--spacing);max-width:720px;margin:0 auto}
-  .card{background:var(--card-bg);border:1px solid var(--line);border-radius:var(--radius);
-    padding:var(--spacing);margin:0px;box-shadow:var(--shadow)}
-  .row{display:flex;gap:10px;align-items:center}
-  .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  input,select,button,textarea{
-    font-size:16px;padding:12px;border-radius:8px;border:1px solid var(--line);
-    width:100%;margin:8px 0;transition:border-color .2s,background-color .2s,box-shadow .2s
-  }
-  textarea{min-height:120px;resize:vertical}
-  input:focus,select:focus,textarea:focus{
-    border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(74,144,226,.2)
-  }
-  button{background:var(--primary);color:#fff;border:none;font-weight:600;cursor:pointer}
-  button:hover{background:var(--primary-dark)}
-  button:active{background:var(--primary-dark);transform:scale(.99)}
-  button.ghost{background:#f1f5f9;color:var(--fg);border:1px solid var(--line)}
-  button.ghost:hover{background:#e2e8f0}
-  .danger{background:#d32f2f}.danger:hover{background:#c62828}
-  .list{display:flex;flex-direction:column;gap:10px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-  .list .item,.grid .item{
-    background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;
-    transition:border-color .2s,box-shadow .2s;cursor:pointer
-  }
-  .list .item:hover,.grid .item:hover{border-color:var(--primary)}
-  .list .item.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(74,144,226,.3)}
-  .muted{color:var(--muted);font-size:12px}
-  .price{font-variant-numeric:tabular-nums;font-weight:600;color:var(--primary-dark)}
-  .total{font-weight:700;font-size:20px;color:var(--fg)}
-  .hidden{display:none!important}
-  .center{text-align:center}
-  .footer-actions{position:sticky;bottom:0;background:var(--card-bg);border-top:1px solid var(--line);padding:12px var(--spacing)}
-  .tag{display:inline-block;background:#e6f0ff;color:var(--primary-dark);border-radius:999px;padding:4px 10px;font-size:12px;margin-left:8px}
-  .spacer{height:16px}
-  #btn-back-shop{width:auto!important;padding:8px 12px;font-size:14px;margin:0}
-  #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:9999;
-    display:flex;justify-content:center;align-items:center;flex-direction:column;
-    font-size:20px;color:var(--primary-dark);font-weight:bold}
-  .spinner{border:4px solid #f3f3f3;border-top:4px solid var(--primary);border-radius:50%;
-    width:40px;height:40px;margin-bottom:10px;animation:spin 1s linear infinite}
-  @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-  .cal-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-  .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  
-  /* 履歴カードの枠色（カード型のまま） */
-  .order-card{border-width:2px;}
-  .order-pending{border-color:#3b82f6;}  /* 青=取消可 */
-  .order-confirmed{border-color:#ef4444;}/* 赤=取消不可 */
-
-  /* お知らせ（共通カード） */
-  .notice-title{font-weight:700;cursor:pointer}
-  .notice-body{margin-top:6px;font-size:14px;line-height:1.6;display:none;white-space:pre-wrap}
-  .notice-item{border-left:4px solid #e6f0ff;padding-left:8px}
-
-  /* ベンダーお知らせオプション行 */
-  .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  .row-wrap>label{display:flex;gap:6px;align-items:center}
-  .row-wrap>label>input[type="date"]{width:auto}
-
-  /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
-  #view-login .status-grid, #view-login .status-row,
-  #view-shop .status-grid,  #view-shop .status-row{
-    display:grid;
-    grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
-    gap:10px; align-items:center;
-  }
-  /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
-  #status-header > div:not(:first-child),
-  #status-header-auth > div:not(:first-child){ text-align:right; }
-  /* ◯×セルは中央寄せ */
-  #view-login .status-row > div:nth-child(n+2),
-  #view-shop  .status-row > div:nth-child(n+2){ text-align:center; }
-
-  /* 長い店名を1行省略、縦に伸びない */
-  #view-login .shop-chip, #view-shop .shop-chip{
-    display:grid;
-    grid-template-columns: 28px 1fr; /* アバター + 店名 */
-    align-items:center;
-    gap:8px;
-    min-width:0;
-  }
-  #view-login .shop-name, #view-shop .shop-name{
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    min-width:0;
-  }
-
-  /* そのほかログイン画面の既存スタイル */
-  #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
-  #view-login .badge-ok, #view-shop .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
-  #view-login .badge-ng, #view-shop .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
-  #view-login .shop-avatar, #view-shop .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
-  #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
-  #view-login .news-title{font-weight:700;line-height:1.5}
-  #view-login .news-date{font-size:12px;color:#667085}
-  
-  /* --- 履歴カードをコンパクトに（view-shop内のみ） --- */
-  #view-shop .history-compact .item{
-    padding:10px;
-  }
-  #view-shop .history-compact h4{
-    font-size:14px; margin:0;
-  }
-  #view-shop .history-compact .muted{
-    font-size:12px;
-  }
-  #view-shop .history-compact .price{
-    font-size:14px;
-  }
-  .visually-hidden {
-    position: absolute;
-    width: 1px; height: 1px;
-    margin: -1px; padding: 0; border: 0;
-    clip: rect(0 0 0 0);
-    overflow: hidden;
-  }
-
-  /* ----------------------------------------------- */
-  /* 【課題解決】品目集計と注文詳細のヘッダー/セル幅と揃え方（スマホ・PC共通） */
-  /* ----------------------------------------------- */
-  /* テーブルタイトルがカードのパディングを超えてはみ出すのを防ぐための設定 */
-  .card h3, .card h4 {
-    margin-top: 0;
-    margin-bottom: 0.5em; 
-    word-break: break-word; 
-    overflow-wrap: break-word;
-  }
-
-  /* === 品目別集計テーブル (ID: #vendor-byitem) === */
-  /* 数量（2列目）と金額（3列目）のデータセルを右揃えにする */
-  #vendor-byitem td:nth-child(2),
-  #vendor-byitem td:nth-child(3){
-    text-align: right !important; 
-  }
-  /* ヘッダーの揃え方（元HTMLを尊重） */
-  #vendor-byitem th:nth-child(1){ width: auto; }
-  #vendor-byitem th:nth-child(2){ width: 90px; }
-  #vendor-byitem th:nth-child(3){ width: 120px; }
-
-
-  /* === 注文詳細テーブル (ID: #vendor-rows) === */
-  /* 数量（3列目）と金額（4列目）のデータセルを右揃えにする */
-  #vendor-rows td:nth-child(3),
-  #vendor-rows td:nth-child(4){
-    text-align: right !important; 
-  }
-  /* ヘッダーの揃え方（元HTMLを尊重） */
-  #vendor-rows th:nth-child(1){ width: 120px; }
-  #vendor-rows th:nth-child(2){ width: auto; }
-  #vendor-rows th:nth-child(3){ width: 70px; }
-  #vendor-rows th:nth-child(4){ width: 120px; }
-  
-  /* ---------------------------------------------------------------------- */
-  /* 【統合・最終解決】狭い画面（640px以下）のレイアウト調整（有効のはみ出し解消含む） */
-  /* ---------------------------------------------------------------------- */
-  @media (max-width:640px){
-    /* 既存のグリッドレイアウト調整 */
-    .cal-grid {grid-template-columns:1fr;}
-    .vendor-kpi {grid-template-columns:1fr;}
+  <style>
+    :root {
+      --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666;
+      --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05);
+      --radius:10px; --spacing:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;background:var(--bg);color:var(--fg);
+      font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    }
+    header{position:sticky;top:0;background:var(--card-bg);border-bottom:1px solid var(--line);
+      padding:12px var(--spacing);z-index:10}
+    header h1{font-size:18px;margin:0}
+    main{padding:var(--spacing);max-width:720px;margin:0 auto}
+    .card{background:var(--card-bg);border:1px solid var(--line);border-radius:var(--radius);
+      padding:var(--spacing);margin:0px;box-shadow:var(--shadow)}
+    .row{display:flex;gap:10px;align-items:center}
+    .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    input,select,button,textarea{
+      font-size:16px;padding:12px;border-radius:8px;border:1px solid var(--line);
+      width:100%;margin:8px 0;transition:border-color .2s,background-color .2s,box-shadow .2s
+    }
+    textarea{min-height:120px;resize:vertical}
+    input:focus,select:focus,textarea:focus{
+      border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(74,144,226,.2)
+    }
+    button{background:var(--primary);color:#fff;border:none;font-weight:600;cursor:pointer}
+    button:hover{background:var(--primary-dark)}
+    button:active{background:var(--primary-dark);transform:scale(.99)}
+    button.ghost{background:#f1f5f9;color:var(--fg);border:1px solid var(--line)}
+    button.ghost:hover{background:#e2e8f0}
+    .danger{background:#d32f2f}.danger:hover{background:#c62828}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+    .list .item,.grid .item{
+      background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;
+      transition:border-color .2s,box-shadow .2s;cursor:pointer
+    }
+    .list .item:hover,.grid .item:hover{border-color:var(--primary)}
+    .list .item.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(74,144,226,.3)}
+    .muted{color:var(--muted);font-size:12px}
+    .price{font-variant-numeric:tabular-nums;font-weight:600;color:var(--primary-dark)}
+    .total{font-weight:700;font-size:20px;color:var(--fg)}
+    .hidden{display:none!important}
+    .center{text-align:center}
+    .footer-actions{position:sticky;bottom:0;background:var(--card-bg);border-top:1px solid var(--line);padding:12px var(--spacing)}
+    .tag{display:inline-block;background:#e6f0ff;color:var(--primary-dark);border-radius:999px;padding:4px 10px;font-size:12px;margin-left:8px}
+    .spacer{height:16px}
+    #btn-back-shop{width:auto!important;padding:8px 12px;font-size:14px;margin:0}
+    #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:9999;
+      display:flex;justify-content:center;align-items:center;flex-direction:column;
+      font-size:20px;color:var(--primary-dark);font-weight:bold}
+    .spinner{border:4px solid #f3f3f3;border-top:4px solid var(--primary);border-radius:50%;
+      width:40px;height:40px;margin-bottom:10px;animation:spin 1s linear infinite}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+    .cal-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
     
-    /* 狭い画面ではテーブルの横スクロールを発生させない */
-    .table-wrap{
-      overflow-x:hidden !important;
-    }
-    .table-wrap table{
-      min-width: 100% !important;
-      width: 100% !important;
-      table-layout: fixed; /* レイアウトを固定にする */
-    }
+    /* 履歴カードの枠色（カード型のまま） */
+    .order-card{border-width:2px;}
+    .order-pending{border-color:#3b82f6;}  /* 青=取消可 */
+    .order-confirmed{border-color:#ef4444;}/* 赤=取消不可 */
 
-    /* 【修正】「表示期限」と「有効」のレスポンシブ対応 */
-    /* 1. row-wrap内のラベルを縦積みに変更 */
-    .row-wrap>label{
-      flex: 1 1 100%; /* 縦積みを強制し、親要素の幅を超えないようにする */
-      min-width: 0;
-    }
-    
-    /* 2. 日付入力を含む最初のラベル内の配置を調整 */
-    .row-wrap>label:first-child{
-        flex-wrap: nowrap;
-        justify-content: space-between;
-    }
-    .row-wrap>label:first-child input[type="date"]{
-        flex-grow: 1;
-        min-width: 100px;
-    }
-    
-    /* 3. 【最終修正】2番目のラベル（「有効」）の幅問題を解消 */
-    .row-wrap>label:nth-child(2){
-      /* 親の flex: 1 1 100% の設定を上書きし、コンテンツ幅のみを使用する */
-      flex: 0 0 auto; 
-      /* チェックボックスとテキストに合わせた幅に固定する */
-      width: auto;
-      max-width: 100%;
-      justify-content: flex-start; /* 左寄せを確実にする */
-    }
+    /* お知らせ（共通カード） */
+    .notice-title{font-weight:700;cursor:pointer}
+    .notice-body{margin-top:6px;font-size:14px;line-height:1.6;display:none;white-space:pre-wrap}
+    .notice-item{border-left:4px solid #e6f0ff;padding-left:8px}
 
-    /* ログイン画面／ログイン後の営業情報（狭幅） */
+    /* ベンダーお知らせオプション行 */
+    .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .row-wrap>label{display:flex;gap:6px;align-items:center}
+    .row-wrap>label>input[type="date"]{width:auto}
+
+    /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
     #view-login .status-grid, #view-login .status-row,
     #view-shop .status-grid,  #view-shop .status-row{
-      grid-template-columns: 1fr 60px 60px 60px;
+      display:grid;
+      grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
+      gap:10px; align-items:center;
     }
-  }
+    /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
+    #status-header > div:not(:first-child),
+    #status-header-auth > div:not(:first-child){ text-align:right; }
+    /* ◯×セルは中央寄せ */
+    #view-login .status-row > div:nth-child(n+2),
+    #view-shop  .status-row > div:nth-child(n+2){ text-align:center; }
+
+    /* 長い店名を1行省略、縦に伸びない */
+    #view-login .shop-chip, #view-shop .shop-chip{
+      display:grid;
+      grid-template-columns: 28px 1fr; /* アバター + 店名 */
+      align-items:center;
+      gap:8px;
+      min-width:0;
+    }
+    #view-login .shop-name, #view-shop .shop-name{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      min-width:0;
+    }
+
+    /* そのほかログイン画面の既存スタイル */
+    #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
+    #view-login .badge-ok, #view-shop .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
+    #view-login .badge-ng, #view-shop .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
+    #view-login .shop-avatar, #view-shop .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
+    #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
+    #view-login .news-title{font-weight:700;line-height:1.5}
+    #view-login .news-date{font-size:12px;color:#667085}
+
+    /* --- 履歴カードをコンパクトに（view-shop内のみ） --- */
+    #view-shop .history-compact .item{
+      padding:10px;
+    }
+    #view-shop .history-compact h4{
+      font-size:14px; margin:0;
+    }
+    #view-shop .history-compact .muted{
+      font-size:12px;
+    }
+    #view-shop .history-compact .price{
+      font-size:14px;
+    }
+    .visually-hidden {
+      position: absolute;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0; border: 0;
+      clip: rect(0 0 0 0);
+      overflow: hidden;
+    }
+
+    /* ----------------------------------------------- */
+    /* 【課題解決】品目集計と注文詳細のヘッダー/セル幅と揃え方（スマホ・PC共通） */
+    /* ----------------------------------------------- */
+    /* テーブルタイトルがカードのパディングを超えてはみ出すのを防ぐための設定 */
+    .card h3, .card h4 {
+      margin-top: 0;
+      margin-bottom: 0.5em; 
+      word-break: break-word; 
+      overflow-wrap: break-word;
+    }
+
+    /* === 品目別集計テーブル (ID: #vendor-byitem) === */
+    /* 数量（2列目）と金額（3列目）のデータセルを右揃えにする */
+    #vendor-byitem td:nth-child(2),
+    #vendor-byitem td:nth-child(3){
+      text-align: right !important; 
+    }
+    /* ヘッダーの揃え方（元HTMLを尊重） */
+    #vendor-byitem th:nth-child(1){ width: auto; }
+    #vendor-byitem th:nth-child(2){ width: 90px; }
+    #vendor-byitem th:nth-child(3){ width: 120px; }
+
+
+    /* === 注文詳細テーブル (ID: #vendor-rows) === */
+    /* 数量（3列目）と金額（4列目）のデータセルを右揃えにする */
+    #vendor-rows td:nth-child(3),
+    #vendor-rows td:nth-child(4){
+      text-align: right !important; 
+    }
+    /* ヘッダーの揃え方（元HTMLを尊重） */
+    #vendor-rows th:nth-child(1){ width: 120px; }
+    #vendor-rows th:nth-child(2){ width: auto; }
+    #vendor-rows th:nth-child(3){ width: 70px; }
+    #vendor-rows th:nth-child(4){ width: 120px; }
+    
+    /* ---------------------------------------------------------------------- */
+    /* 【統合・最終解決】狭い画面（640px以下）のレイアウト調整（有効のはみ出し解消含む） */
+    /* ---------------------------------------------------------------------- */
+    @media (max-width:640px){
+      /* 既存のグリッドレイアウト調整 */
+      .cal-grid {grid-template-columns:1fr;}
+      .vendor-kpi {grid-template-columns:1fr;}
+      
+      /* 狭い画面ではテーブルの横スクロールを発生させない */
+      .table-wrap{
+        overflow-x:hidden !important;
+      }
+      .table-wrap table{
+        min-width: 100% !important;
+        width: 100% !important;
+        table-layout: fixed; /* レイアウトを固定にする */
+      }
+
+      /* 【修正】「表示期限」と「有効」のレスポンシブ対応 */
+      /* 1. row-wrap内のラベルを縦積みに変更 */
+      .row-wrap>label{
+        flex: 1 1 100%; /* 縦積みを強制し、親要素の幅を超えないようにする */
+        min-width: 0;
+      }
+      
+      /* 2. 日付入力を含む最初のラベル内の配置を調整 */
+      .row-wrap>label:first-child{
+          flex-wrap: nowrap;
+          justify-content: space-between;
+      }
+      .row-wrap>label:first-child input[type="date"]{
+          flex-grow: 1;
+          min-width: 100px;
+      }
+      
+      /* 3. 【最終修正】2番目のラベル（「有効」）の幅問題を解消 */
+      .row-wrap>label:nth-child(2){
+        /* 親の flex: 1 1 100% の設定を上書きし、コンテンツ幅のみを使用する */
+        flex: 0 0 auto; 
+        width: auto;
+        max-width: 100%;
+        justify-content: flex-start; /* 左寄せを確実にする */
+      }
+
+      /* ログイン画面／ログイン後の営業情報（狭幅） */
+      #view-login .status-grid, #view-login .status-row,
+      #view-shop .status-grid,  #view-shop .status-row{
+        grid-template-columns: 1fr 60px 60px 60px;
+      }
+    }
 </style>
 </head>
 <body>
@@ -269,15 +268,6 @@
       </div>
       <div id="status-rows-auth" class="list" style="margin-top:10px"></div>
       <p id="status-empty-auth" class="muted" style="margin:8px 0 0 0;display:none">現在、表示できる店舗がありません。</p>
-    </div>
-
-    <div id="public-news-card-auth" class="card">
-      <div class="row-between">
-        <h3 style="margin:0">新着情報</h3>
-        <button id="btn-news-refresh-auth" class="ghost" style="width:auto">更新</button>
-      </div>
-      <div id="news-list-auth" class="list" style="margin-top:10px"></div>
-      <p id="news-empty-auth" class="muted" style="margin:8px 0 0 0;display:none">各お店からのお知らせはまだありません。</p>
     </div>
 
     <div class="footer-actions row"><button class="ghost" id="btn-logout">ログアウト</button></div>
@@ -335,11 +325,7 @@
       <h3 style="margin:0">品目別集計</h3>
       <div class="table-wrap">
         <table style="width:100%;border-collapse:collapse;margin-top:8px">
-          <thead><tr>
-            <th style="text-align:left;">品目</th>
-            <th style="width:50px; text-align:right;">数量</th>
-            <th style="width:80px; text-align:center;">金額</th>
-          </tr></thead>
+          <thead><tr><th>品目</th><th style="width:90px">数量</th><th style="width:120px">金額</th></tr></thead>
           <tbody id="vendor-byitem"></tbody>
         </table>
       </div>
@@ -350,12 +336,7 @@
       <h3 style="margin:0">注文詳細</h3>
       <div class="table-wrap">
         <table style="width:100%;border-collapse:collapse;margin-top:8px">
-          <thead><tr>
-            <th style="width:90px; text-align:left;">ユーザーID</th>
-            <th style="text-align:left;">品目</th>
-            <th style="width:50px; text-align:right;">数量</th>
-            <th style="width:80px; text-align:center;">金額</th>
-          </tr></thead>
+          <thead><tr><th style="width:120px">ユーザーID</th><th>品目</th><th style="width:70px">数量</th><th style="width:120px">金額</th></tr></thead>
           <tbody id="vendor-rows"></tbody>
         </table>
       </div>
@@ -562,7 +543,8 @@ async function renderNews(n){
 }
 
 /* =========================
-   ログイン後ビュー：営業情報＋新着情報（auth）
+   ログイン後ビュー：営業情報（auth）
+   ※ 新着情報（auth）の処理は削除しました
 ========================= */
 async function loadPublicOverviewAuth(force=false){
   // ラベル（auth）
@@ -575,11 +557,10 @@ async function loadPublicOverviewAuth(force=false){
 
   // キャッシュ即時描画（60秒）
   const cOverview=cache.get('public_overview',300); if(cOverview) renderOverviewAuth(cOverview);
-  const cNews=cache.get('latest_news',300);       if(cNews)     renderNewsAuth(cNews);
 
   // 最新取得
   try{ const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('public_overview',d); renderOverviewAuth(d);}catch(e){}
-  try{ const n=await api('latest_messages_all','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('latest_news',n); renderNewsAuth(n);}catch(e){}
+  // 新着情報（auth）のAPI呼び出しとレンダリング処理は削除しました
 }
 function renderOverviewAuth(d){
   const rows=document.getElementById("status-rows-auth");
@@ -600,70 +581,7 @@ function renderOverviewAuth(d){
     rows.appendChild(div);
   });
 }
-// ▼ 差し替え：各ベンダーから“最新1件ずつ”表示（本文は最初から展開）
-async function renderNewsAuth(n){
-  const list = $("#news-list-auth");
-  if(!list) return;
-  list.innerHTML = '';
-
-  const news = (n && n.news) ? n.news.slice() : [];
-  if(!news.length){
-    $("#news-empty-auth").style.display = 'block';
-    return;
-  }
-  $("#news-empty-auth").style.display = 'none';
-
-  // 1) 全体を日付降順に並べ替え
-  news.sort((a,b)=>{
-    const ta = a.updated_at ? Date.parse(a.updated_at) : 0;
-    const tb = b.updated_at ? Date.parse(b.updated_at) : 0;
-    return tb - ta;
-  });
-
-  // 2) shop_idごとに最初の1件だけ採用
-  const seen = new Set();
-  const perVendor = [];
-  for(const item of news){
-    const sid = String(item.shop_id || '');
-    if(sid && !seen.has(sid)){
-      perVendor.push(item);
-      seen.add(sid);
-    }
-  }
-
-  // 3) 1ベンダー=1カードを描画（本文は item.body が無ければAPIで取得）
-  for(const item of perVendor){
-    const d = item.updated_at ? new Date(item.updated_at) : null;
-    const ymd = d ? `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${['日','月','火','水','木','金','土'][d.getDay()]}）` : '';
-
-    const row = document.createElement('div');
-    row.className = 'news-item';
-    row.innerHTML = `
-      <div class="shop-avatar">${(item.shop_name||'?').slice(0,1)}</div>
-      <div style="flex:1">
-        <div class="news-title">${item.shop_name} — ${item.title || '(タイトル未設定)'}</div>
-        <div class="news-date" style="margin:4px 0 6px 0">${ymd}</div>
-        <div class="notice-body"></div>
-      </div>
-    `;
-    const bodyEl = row.querySelector('.notice-body');
-
-    // 可能ならレスポンスの本文をそのまま使用（なければ補完取得）
-    if(item.body && item.body.trim()){
-      bodyEl.innerHTML = Text.autoLinkAndBreaks(item.body);
-    }else{
-      try{
-        const res = await api('messages','GET',{shop_id:item.shop_id},{withLoader:false,timeoutMs:5000,retries:0});
-        const first = (res.ok && res.list && res.list[0]) ? res.list[0] : null;
-        bodyEl.innerHTML = first ? Text.autoLinkAndBreaks(first.body||'') : '（本文はありません）';
-      }catch(e){
-        bodyEl.innerHTML = '（本文の取得に失敗しました）';
-      }
-    }
-    bodyEl.style.display = 'block'; // ログイン後は最初から展開
-    list.appendChild(row);
-  }
-}
+// async function renderNewsAuth(n) { ... 新着情報の処理は削除されました ... }
 
 /* =========================
    ログイン
@@ -702,7 +620,7 @@ async function doLogin(){
 
       // 並列ロード：ダッシュボードと公開情報（auth）
       const p1 = loadDashboard();           // 店一覧＋履歴
-      const p2 = loadPublicOverviewAuth();  // 営業情報＋各ベンダー最新1件
+      const p2 = loadPublicOverviewAuth();  // 営業情報のみ
       await Promise.allSettled([p1,p2]);    // 片方失敗でも画面は出し続ける
     }
   }catch(e){
@@ -1039,7 +957,7 @@ $("#btn-news-refresh").onclick=()=> loadPublicOverview(true);
 
 // ログイン後の公開情報 更新ボタン
 $("#btn-public-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
-$("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
+// 新着情報の更新ボタン処理は削除しました
 
 /* =========================
    初期化
@@ -1056,7 +974,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     }else{
       $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
       await loadDashboard();
-      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報＆新着（最新1件）
+      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報のみ
       show("view-shop");
     }
   }else{
@@ -1134,7 +1052,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     if(!origDoLogin){ console.warn("doLogin未定義"); return; }
     try{ await origDoLogin(); }catch(e){ /* 既存が処理 */ }
     const user = window.store && typeof store.get==="function" ? store.get("user") : null;
-    if(user && user.role!=="vendor"){
+    if(user && !/^s\d+$/i.test(user.id)){
       try{
         if(typeof showLoading==="function") showLoading(true);
         await Promise.all([
@@ -1155,7 +1073,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     const token = window.store && typeof store.get==="function" ? store.get("token") : null;
     const user  = window.store && typeof store.get==="function" ? store.get("user")  : null;
     if(!token || !user) return;
-    if(user.role === "vendor") return;
+    if(/^s\d+$/i.test(user.id)) return;
     try{
       if(typeof showLoading==="function") showLoading(true);
       await Promise.all([
