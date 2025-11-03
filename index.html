@@ -196,6 +196,40 @@
   #view-vendor .row-wrap > label:first-child{ flex: 1 1 200px; }
   #view-vendor .row-wrap > label:last-child{ flex: 0 0 auto; }
 }
+/* ===== ベンダー画面：品目別集計 表のスマホ最適化 ===== */
+@media (max-width:640px){
+
+  /* 各行を1行に圧縮 */
+  #vendor-byitem tr{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    border-bottom:1px solid var(--line,#ddd);
+    padding:4px 0;
+  }
+
+  /* 1列目（品目）を省略表示 */
+  #vendor-byitem td:nth-child(1){
+    flex:1 1 auto;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    min-width:0;   /* 省略が効くように */
+  }
+
+  /* 数量・金額を横並びで右側に固定幅 */
+  #vendor-byitem td:nth-child(2),
+  #vendor-byitem td:nth-child(3){
+    flex:0 0 auto;
+    text-align:right;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ヘッダは通常のテーブルレイアウトのまま */
+  #vendor-byitem thead{ display:none; }
+}
   </style>
 </head>
 <body>
