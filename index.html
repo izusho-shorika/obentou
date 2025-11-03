@@ -65,7 +65,7 @@
   
   /* 履歴カードの枠色（カード型のまま） */
   .order-card{border-width:2px;}
-  .order-pending{border-color:#3b82f6;} /* 青=取消可 */
+  .order-pending{border-color:#3b82f6;}  /* 青=取消可 */
   .order-confirmed{border-color:#ef4444;}/* 赤=取消不可 */
 
   /* お知らせ（共通カード） */
@@ -77,6 +77,7 @@
   .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
   .row-wrap>label{display:flex;gap:6px;align-items:center}
   .row-wrap>label>input[type="date"]{width:auto}
+  /* @media (max-width:640px){.row-wrap>label{flex:1 1 180px}} ← 元コードのflex:1 1 180pxを削除するため、一旦コメントアウト */
 
   /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
   #view-login .status-grid, #view-login .status-row,
@@ -85,7 +86,43 @@
     grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
     gap:10px; align-items:center;
   }
+  @media (max-width:640px){
+    #view-login .status-grid, #view-login .status-row,
+    #view-shop .status-grid,  #view-shop .status-row{
+      grid-template-columns: 1fr 60px 60px 60px;
+    }
+  }
+  /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
+  #status-header > div:not(:first-child),
+  #status-header-auth > div:not(:first-child){ text-align:right; }
+  /* ◯×セルは中央寄せ */
+  #view-login .status-row > div:nth-child(n+2),
+  #view-shop  .status-row > div:nth-child(n+2){ text-align:center; }
 
+  /* 長い店名を1行省略、縦に伸びない */
+  #view-login .shop-chip, #view-shop .shop-chip{
+    display:grid;
+    grid-template-columns: 28px 1fr; /* アバター + 店名 */
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+  #view-login .shop-name, #view-shop .shop-name{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    min-width:0;
+  }
+
+  /* そのほかログイン画面の既存スタイル */
+  #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
+  #view-login .badge-ok, #view-shop .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
+  #view-login .badge-ng, #view-shop .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
+  #view-login .shop-avatar, #view-shop .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
+  #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
+  #view-login .news-title{font-weight:700;line-height:1.5}
+  #view-login .news-date{font-size:12px;color:#667085}
+  
   /* --- 履歴カードをコンパクトに（view-shop内のみ） --- */
   #view-shop .history-compact .item{
     padding:10px;
@@ -118,29 +155,29 @@
     overflow-wrap: break-word;
   }
 
-  /* === 品目集計テーブル (ID: #summary-table) === */
+  /* === 品目別集計テーブル (ID: #vendor-byitem) === */
   /* 数量（2列目）と金額（3列目）のデータセルを右揃えにする */
-  #summary-table td:nth-child(2),
-  #summary-table td:nth-child(3){
-    text-align: right !important; /* !important で既存のtext-alignを上書き */
+  #vendor-byitem td:nth-child(2),
+  #vendor-byitem td:nth-child(3){
+    text-align: right !important; /* !important で確実に右揃え */
   }
-  /* ヘッダーの揃え方（前回までの設定を維持） */
-  #summary-table th:nth-child(1), #summary-table td:nth-child(1){ text-align: left; width: auto; }
-  #summary-table th:nth-child(2){ text-align: right; width: 50px; }
-  #summary-table th:nth-child(3){ text-align: center; width: 80px; }
+  /* ヘッダーの揃え方（元HTMLを尊重） */
+  #vendor-byitem th:nth-child(1){ width: auto; }
+  #vendor-byitem th:nth-child(2){ width: 90px; }
+  #vendor-byitem th:nth-child(3){ width: 120px; }
 
 
-  /* === 注文詳細テーブル (ID: #detail-table) === */
+  /* === 注文詳細テーブル (ID: #vendor-rows) === */
   /* 数量（3列目）と金額（4列目）のデータセルを右揃えにする */
-  #detail-table td:nth-child(3),
-  #detail-table td:nth-child(4){
-    text-align: right !important; /* !important で既存のtext-alignを上書き */
+  #vendor-rows td:nth-child(3),
+  #vendor-rows td:nth-child(4){
+    text-align: right !important; /* !important で確実に右揃え */
   }
-  /* ヘッダーの揃え方（前回までの設定を維持） */
-  #detail-table th:nth-child(1), #detail-table td:nth-child(1){ text-align: left; width: 90px; }
-  #detail-table th:nth-child(2), #detail-table td:nth-child(2){ text-align: left; width: auto; }
-  #detail-table th:nth-child(3){ text-align: right; width: 50px; }
-  #detail-table th:nth-child(4){ text-align: center; width: 80px; }
+  /* ヘッダーの揃え方（元HTMLを尊重） */
+  #vendor-rows th:nth-child(1){ width: 120px; }
+  #vendor-rows th:nth-child(2){ width: auto; }
+  #vendor-rows th:nth-child(3){ width: 70px; }
+  #vendor-rows th:nth-child(4){ width: 120px; }
   
   /* ---------------------------------------------------------------------- */
   /* 【統合・最終解決】狭い画面（640px以下）のレイアウト調整（有効のはみ出し解消含む） */
@@ -152,8 +189,9 @@
     
     /* 狭い画面ではテーブルの横スクロールを発生させない */
     .table-wrap{
+      /* 元のCSSでは overflow-x:auto;-webkit-overflow-scrolling:touch; で横スクロールを許容していたが、
+         テーブル幅が小さすぎるため、ここでは固定幅指定とします */
       overflow-x:hidden !important; /* 強制的に横スクロールを禁止 */
-      padding-bottom: 0;
     }
     .table-wrap table{
       min-width: 100% !important;
@@ -162,12 +200,13 @@
     }
 
     /* 【修正】「表示期限」と「有効」のレスポンシブ対応 */
-    /* 1. row-wrap内のラベルを100%幅にし、確実に縦に積む */
+    /* 1. row-wrap内のラベルを縦積みに変更 */
     .row-wrap>label{
       flex: 1 1 100%; /* 縦積みを強制し、親要素の幅を超えないようにする */
       min-width: 0;
     }
-    /* 2. date入力を含む最初のラベル内の配置を調整し、入力欄を柔軟にする */
+    
+    /* 2. 日付入力を含む最初のラベル内の配置を調整 */
     .row-wrap>label:first-child{
         flex-wrap: nowrap;
         justify-content: space-between;
@@ -176,15 +215,16 @@
         flex-grow: 1;
         min-width: 100px;
     }
+    
     /* 3. 【最終修正】2番目のラベル（「有効」）を左寄せにし、はみ出しを解消 */
     .row-wrap>label:nth-child(2){
-      justify-content: flex-start; 
-      flex-grow: 0; /* 縮小しない */
-      flex-shrink: 0; /* 拡張しない */
-      width: auto; /* content-size を優先 */
-      /* 必要に応じてチェックボックスとテキスト間のスペースを制御 */
-      /* gap: 6px; は親から継承されているはず */
-      margin-right: auto; /* 左寄せを確実にする */
+      /* Flexboxアイテムのサイズ調整を無効化し、コンテンツ幅を尊重 */
+      flex-grow: 0; 
+      flex-shrink: 0; 
+      /* content-size を優先し、親の横幅を超えないよう max-width: 100% を追加 */
+      width: auto;
+      max-width: 100%;
+      justify-content: flex-start; /* 左寄せ */
     }
 
     /* ログイン画面／ログイン後の営業情報（狭幅） */
@@ -193,37 +233,6 @@
       grid-template-columns: 1fr 60px 60px 60px;
     }
   }
-
-  /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
-  #status-header > div:not(:first-child),
-  #status-header-auth > div:not(:first-child){ text-align:right; }
-  /* ◯×セルは中央寄せ */
-  #view-login .status-row > div:nth-child(n+2),
-  #view-shop  .status-row > div:nth-child(n+2){ text-align:center; }
-
-  /* 長い店名を1行省略、縦に伸びない */
-  #view-login .shop-chip, #view-shop .shop-chip{
-    display:grid;
-    grid-template-columns: 28px 1fr; /* アバター + 店名 */
-    align-items:center;
-    gap:8px;
-    min-width:0;
-  }
-  #view-login .shop-name, #view-shop .shop-name{
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    min-width:0;
-  }
-
-  /* そのほかログイン画面の既存スタイル */
-  #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
-  #view-login .badge-ok, #view-shop .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
-  #view-login .badge-ng, #view-shop .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
-  #view-login .shop-avatar, #view-shop .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
-  #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
-  #view-login .news-title{font-weight:700;line-height:1.5}
-  #view-login .news-date{font-size:12px;color:#667085}
 </style>
 </head>
 <body>
@@ -233,7 +242,7 @@
   <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です00</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
