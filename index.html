@@ -152,7 +152,7 @@
   <section id="view-login" class="card">
     <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-    <p style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です01</p>
+    <p style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です02</p>
     <div style="padding-top:10px">
       <input id="login-id" placeholder="ログインID（例：20251101）">
       <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
@@ -556,12 +556,13 @@ async function renderNewsAuth(n){
 // 既存方針のまま（ID+4桁PW）
 async function doLogin(){
   const id=$("#login-id").value.trim(), pass=$("#login-pass").value.trim(), err=$("#login-error");
+
   err.textContent="";
   if(!id){err.textContent="IDを入力してください";return}
   if(!/^\d{4}$/.test(pass)){err.textContent="パスワードは4桁の数字です";return}
 
   try{
-    const d=await api("login","POST",{id,password:pass},{timeoutMs:5000,retries:0});
+    const d=await api("login","POST",{id,password:pass},{timeoutMs:12000,retries:1});
     if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
 
     store.set("token",d.token); store.set("user",d.user);
@@ -941,7 +942,7 @@ const bnra=$("#btn-news-refresh-auth"); if(bnra) bnra.onclick=()=> loadPublicOve
 <script>
 (function(){
   // 設定
-  window.NET = Object.assign({ BASE_TIMEOUT: 10000, MAX_RETRIES: 2, BACKOFF_MS: 1200 }, window.NET||{});
+  window.NET = Object.assign({ BASE_TIMEOUT: 12000, MAX_RETRIES: 2, BACKOFF_MS: 800 }, window.NET||{});
   const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
   // ローダー参照カウント
