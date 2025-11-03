@@ -149,153 +149,122 @@
   clip: rect(0 0 0 0);
   overflow: hidden;
 }
-    
-/* ===== 1) ベンダー表の列ズレ対策：左寄せ＋数値列は右寄せ ===== */
-/* デフォルトは左寄せ（可読性重視） */
-#view-vendor .table-wrap table th,
-#view-vendor .table-wrap table td{
-  text-align:left;
-  vertical-align:middle;
-}
+/* =========================================================
+   ベンダー画面（#view-vendor）だけに効く調整
+   - 列ズレ解消（デフォ左寄せ、数値列の揃え最適化）
+   - 表の横スクロール抑制（スマホはフォント/余白をタイトに）
+   - 「有効」チェックボックスのレスポンシブ修正
+   - 品目別集計ヘッダの揃え変更（数量=右／金額=中央）
+   - 注文詳細：列幅/省略/揃えの最適化
+   ※ 重複定義は削除済み
+========================================================= */
 
-/* ===== 2) 「有効」チェックボックスのレスポンシブ崩れ修正 ===== */
-/* 2つ目の<label>（チェックボックス側）は shrink-to-fit。右端まで伸びない */
-#view-vendor .row-wrap > label:last-child{
-  flex: 0 0 auto;
-  white-space: nowrap;      /* 文言が折れて崩れるのを防止 */
-  align-self: center;       /* 高さ揃え */
-}
-/* ========== ベンダー画面の表を横スクロール無しで収める（スマホ優先） ========== */
-
-/* 共通：固定レイアウトで列幅を揃える */
+/* 0) 基本：ベンダーの表は固定レイアウト＆横幅100%、デフォ左寄せ */
 #view-vendor .table-wrap table{
   table-layout: fixed;
   width: 100%;
+  min-width: auto !important;   /* 既存の min-width を無効化して横スクロールを抑制 */
 }
-
-/* 既存の min-width を打ち消して横スクロールさせない */
-#view-vendor .table-wrap table{
-  min-width: auto !important;
-}
-
-/* 行間・余白をタイトに（PCでも軽く効く） */
 #view-vendor .table-wrap th,
 #view-vendor .table-wrap td{
   padding: 8px 10px;
+  text-align: left;
+  vertical-align: middle;
 }
 
-/* スマホ最適化 */
+/* 1) 品目別集計：ヘッダだけ揃え変更（値は現状の揃えのまま） */
+#view-vendor #vendor-byitem thead th:nth-child(2){ text-align: right; }  /* 数量(見出し)＝右 */
+#view-vendor #vendor-byitem thead th:nth-child(3){ text-align: center; } /* 金額(見出し)＝中央 */
+
+/* 2) 注文詳細：列幅/省略/揃え（PC/モバイル共通） */
+#view-vendor #vendor-rows{ font-size: .95em; }
+
+/* 品目の列幅を「品目別集計の品目」と同じ比率に（例：40%） */
+#view-vendor #vendor-byitem th:nth-child(1),
+#view-vendor #vendor-byitem td:nth-child(1){ width: 40%; }  /* 品目（集計） */
+#view-vendor #vendor-rows  th:nth-child(2),
+#view-vendor #vendor-rows  td:nth-child(2){ width: 40%; }  /* 品目（注文詳細） */
+
+/* 注文詳細の品目名は1行で省略（…） */
+#view-vendor #vendor-rows td:nth-child(2){
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* 数量（注文詳細）：2桁想定の最小幅、見出し=右／値=中央 */
+#view-vendor #vendor-rows th:nth-child(3){ text-align: right; }
+#view-vendor #vendor-rows td:nth-child(3){
+  width: 3.2ch;                          /* 2桁＋わずかな余白 */
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 金額（注文詳細）：4桁想定の狭幅、見出し=中央／値=右 */
+#view-vendor #vendor-rows th:nth-child(4){ text-align: center; }
+#view-vendor #vendor-rows td:nth-child(4){
+  width: 6.2ch;                          /* 4桁＋記号/カンマの少しの余裕 */
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 3) 「有効」チェックボックスのレスポンシブ崩れ修正 */
+#view-vendor .row-wrap > label:last-child{
+  flex: 0 0 auto;         /* shrink-to-fit */
+  white-space: nowrap;    /* 文言の折返しを防ぐ */
+  align-self: center;     /* 高さ揃え */
+}
+#view-vendor .row-wrap > label input[type="checkbox"]{
+  width: auto;            /* 横幅100%化を防止 */
+}
+
+/* 4) スマホ最適化（横スクロール回避＆視認性アップ） */
 @media (max-width:640px){
 
-  /* フォントを小さめにして情報量を収める */
-  #view-vendor .table-wrap{
-    font-size: 0.85em;
-  }
-  #view-vendor .table-wrap th{
-    font-weight: 700;
-    font-size: 0.92em;
-  }
-
-  /* さらに余白を詰める */
+  /* フォント/余白をタイトに（この画面の表だけ） */
+  #view-vendor .table-wrap{ font-size: 0.85em; }
+  #view-vendor .table-wrap th{ font-weight: 700; font-size: 0.92em; }
   #view-vendor .table-wrap th,
   #view-vendor .table-wrap td{
     padding: 6px 8px;
     line-height: 1.25;
   }
 
-  /* 品目名は折り返しを許可（省略せず全部見せる） */
-  #view-vendor #vendor-byitem td:nth-child(1),
-  #view-vendor #vendor-rows  td:nth-child(2){
-    white-space: normal;         /* ← 折り返しOK */
-    overflow-wrap: anywhere;     /* ← 長い単語も折りやすく */
+  /* 品目別集計：品目は折り返し可（「全体が見れているので良い」方針） */
+  #view-vendor #vendor-byitem td:nth-child(1){
+    white-space: normal;
+    overflow-wrap: anywhere;
     word-break: break-word;
     min-width: 0;
   }
 
-  /* 数値列は見やすいよう等幅寄せ */
-  #view-vendor #vendor-byitem td:nth-child(2),
-  #view-vendor #vendor-rows  td:nth-child(3){
-    text-align: center;          /* 数量＝中央 */
-    font-variant-numeric: tabular-nums;
-  }
-  #view-vendor #vendor-byitem td:nth-child(3),
-  #view-vendor #vendor-rows  td:nth-child(4){
-    text-align: right;           /* 金額＝右 */
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;         /* ¥1,234 をできるだけ1塊で */
-  }
+  /* 数値列を見やすく：数量=中央／金額=右（既存の見え方を維持） */
+  #view-vendor #vendor-byitem td:nth-child(2){ text-align: center; font-variant-numeric: tabular-nums; }
+  #view-vendor #vendor-byitem td:nth-child(3){ text-align: right;   font-variant-numeric: tabular-nums; }
 
-  /* 列幅比を“見た目揃え”に最適化（合計100%） */
+  /* 列幅の“見た目揃え”最適化（必要なら%は調整可） */
   /* 品目別集計：品目60 / 数量18 / 金額22 */
   #vendor-byitem th:nth-child(1), #vendor-byitem td:nth-child(1){ width: 60%; }
   #vendor-byitem th:nth-child(2), #vendor-byitem td:nth-child(2){ width: 18%; }
   #vendor-byitem th:nth-child(3), #vendor-byitem td:nth-child(3){ width: 22%; }
 
   /* 注文詳細：ユーザーID22 / 品目40 / 数量18 / 金額20 */
-  #vendor-rows th:nth-child(1), #vendor-rows td:nth-child(1){ width: 22%; text-align:left; }
-  #vendor-rows th:nth-child(2), #vendor-rows td:nth-child(2){ width: 40%; }
-  #vendor-rows th:nth-child(3), #vendor-rows td:nth-child(3){ width: 18%; }
+  #vendor-rows th:nth-child(1), #vendor-rows td:nth-child(1){ width: 22%; text-align: left; }
+  #vendor-rows th:nth-child(2), #vendor-rows td:nth-child(2){ width: 45%; }
+  #vendor-rows th:nth-child(3), #vendor-rows td:nth-child(3){ width: 13%; }
   #vendor-rows th:nth-child(4), #vendor-rows td:nth-child(4){ width: 20%; }
 
-  /* 念のため横スクロールを無効化 */
-  #view-vendor .table-wrap{
-    overflow-x: visible;
-  }
-  /* 以前つけた“横スクロールの気づきグラデーション”があれば消す */
-  #view-vendor .table-wrap::after{ display:none !important; }
-}
-/* ========== 1) 品目別集計：見出しの揃えだけ変更（中身はそのまま） ========== */
-/* 「数量」見出しを右寄せ、「金額」見出しを中央寄せ。数値(td)の揃えは現状維持 */
-#view-vendor #vendor-byitem:where(thead tr th:nth-child(2)){ text-align:right;  }
-#view-vendor #vendor-byitem:where(thead tr th:nth-child(3)){ text-align:center; }
+  /* 横スクロールの演出は不要 */
+  #view-vendor .table-wrap{ overflow-x: visible; }
+  #view-vendor .table-wrap::after{ display: none !important; }
 
-/* ========== 2) 注文詳細：列幅＆揃えの最適化 ========== */
-/* 共通：固定レイアウトで列幅を効かせる／フォント少し小さめ（この表だけ） */
-#view-vendor .table-wrap table{ table-layout:fixed; }
-#view-vendor #vendor-rows{ font-size:.95em; }
-
-/* 品目の列幅を「品目別集計の品目」と同じ比率に固定（例：40%）
-   必要なら % をお好みで微調整してください（両表に同じ比率が効きます） */
-#view-vendor #vendor-byitem th:nth-child(1),
-#view-vendor #vendor-byitem td:nth-child(1){ width:40%; }  /* 品目（集計） */
-#view-vendor #vendor-rows  th:nth-child(2),
-#view-vendor #vendor-rows  td:nth-child(2){ width:40%; }  /* 品目（注文詳細） */
-
-/* 品目名が入りきらない時は省略記号（CSS標準の … ）でカットして1行に */
-#view-vendor #vendor-rows td:nth-child(2){
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;
-}
-
-/* 数量：最小限の幅（2桁想定）。見出しは右寄せ、値は中央寄せ */
-#view-vendor #vendor-rows th:nth-child(3){ text-align:right; }
-#view-vendor #vendor-rows td:nth-child(3){
-  width:3.2ch;                 /* 2桁＋余白ぶん。必要なら 3.6ch などに */
-  text-align:center;
-  font-variant-numeric:tabular-nums;
-  white-space:nowrap;
-}
-
-/* 金額：4桁想定で狭めの幅。見出しは中央寄せ、値は右寄せ */
-#view-vendor #vendor-rows th:nth-child(4){ text-align:center; }
-#view-vendor #vendor-rows td:nth-child(4){
-  width:6.2ch;                 /* 4桁＋記号/カンマの余裕。端末に応じて調整可 */
-  text-align:right;
-  font-variant-numeric:tabular-nums;
-  white-space:nowrap;
-}
-
-
-
-/* チェックボックスの幅は自動（横幅100%化を防止） */
-#view-vendor .row-wrap > label input[type="checkbox"]{
-  width: auto;
-}
-
-/* スマホ時：1つ目（表示期限）は可変、2つ目（有効）は内容幅のまま横並び or 折返し */
-@media (max-width:640px){
-  #view-vendor .row-wrap{ gap:10px; }
+  /* 「有効」ラベルの並び：左(期限)=可変／右(有効)=内容幅 */
+  #view-vendor .row-wrap{ gap: 10px; }
   #view-vendor .row-wrap > label:first-child{ flex: 1 1 200px; }
-  #view-vendor .row-wrap > label:last-child{ flex: 0 0 auto; }
+  #view-vendor .row-wrap > label:last-child { flex: 0 0 auto;   }
 }
 
   </style>
@@ -308,7 +277,7 @@
  <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です00</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
