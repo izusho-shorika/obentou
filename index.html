@@ -122,7 +122,7 @@
   /* 数量（2列目）と金額（3列目）のデータセルを右揃えにする */
   #summary-table td:nth-child(2),
   #summary-table td:nth-child(3){
-    text-align: right !important; /* 強制的に右揃え */
+    text-align: right !important; /* !important で既存のtext-alignを上書き */
   }
   /* ヘッダーの揃え方（前回までの設定を維持） */
   #summary-table th:nth-child(1), #summary-table td:nth-child(1){ text-align: left; width: auto; }
@@ -134,7 +134,7 @@
   /* 数量（3列目）と金額（4列目）のデータセルを右揃えにする */
   #detail-table td:nth-child(3),
   #detail-table td:nth-child(4){
-    text-align: right !important; /* 強制的に右揃え */
+    text-align: right !important; /* !important で既存のtext-alignを上書き */
   }
   /* ヘッダーの揃え方（前回までの設定を維持） */
   #detail-table th:nth-child(1), #detail-table td:nth-child(1){ text-align: left; width: 90px; }
@@ -179,10 +179,12 @@
     /* 3. 【最終修正】2番目のラベル（「有効」）を左寄せにし、はみ出しを解消 */
     .row-wrap>label:nth-child(2){
       justify-content: flex-start; 
-      /* チェックボックスとテキストが一行に収まるように flex-grow:0; を明示 */
-      flex-grow: 0; 
-      flex-shrink: 0;
-      width: auto; /* widthをautoに設定して content-size にする */
+      flex-grow: 0; /* 縮小しない */
+      flex-shrink: 0; /* 拡張しない */
+      width: auto; /* content-size を優先 */
+      /* 必要に応じてチェックボックスとテキスト間のスペースを制御 */
+      /* gap: 6px; は親から継承されているはず */
+      margin-right: auto; /* 左寄せを確実にする */
     }
 
     /* ログイン画面／ログイン後の営業情報（狭幅） */
@@ -231,7 +233,7 @@
   <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です00</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
