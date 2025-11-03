@@ -149,6 +149,53 @@
   clip: rect(0 0 0 0);
   overflow: hidden;
 }
+/* ===== 1) ベンダー表の列ズレ対策：左寄せ＋数値列は右寄せ ===== */
+/* デフォルトは左寄せ（可読性重視） */
+#view-vendor .table-wrap table th,
+#view-vendor .table-wrap table td{
+  text-align:left;
+  vertical-align:middle;
+}
+
+/* 「品目別集計」：数量(2列目)・金額(3列目)だけ右寄せ */
+#vendor-byitem td:nth-child(2),
+#vendor-byitem td:nth-child(3){
+  text-align:right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 「注文詳細」：数量(3列目)・金額(4列目)だけ右寄せ */
+/* ユーザーID(1列目)・品目(2列目)は左寄せのまま */
+#vendor-rows td:nth-child(3),
+#vendor-rows td:nth-child(4){
+  text-align:right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ヘッダは左寄せのままでOK（数値列の見出しを右寄せにしたい場合は下2行のコメントアウトを外す）
+#view-vendor .table-wrap thead th:nth-child(2),
+#view-vendor .table-wrap thead th:last-child{ text-align:right; }
+*/
+
+/* ===== 2) 「有効」チェックボックスのレスポンシブ崩れ修正 ===== */
+/* 2つ目の<label>（チェックボックス側）は shrink-to-fit。右端まで伸びない */
+#view-vendor .row-wrap > label:last-child{
+  flex: 0 0 auto;
+  white-space: nowrap;      /* 文言が折れて崩れるのを防止 */
+  align-self: center;       /* 高さ揃え */
+}
+
+/* チェックボックスの幅は自動（横幅100%化を防止） */
+#view-vendor .row-wrap > label input[type="checkbox"]{
+  width: auto;
+}
+
+/* スマホ時：1つ目（表示期限）は可変、2つ目（有効）は内容幅のまま横並び or 折返し */
+@media (max-width:640px){
+  #view-vendor .row-wrap{ gap:10px; }
+  #view-vendor .row-wrap > label:first-child{ flex: 1 1 200px; }
+  #view-vendor .row-wrap > label:last-child{ flex: 0 0 auto; }
+}
   </style>
 </head>
 <body>
