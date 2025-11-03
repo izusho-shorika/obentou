@@ -266,6 +266,63 @@
   #view-vendor .row-wrap > label:first-child{ flex: 1 1 200px; }
   #view-vendor .row-wrap > label:last-child { flex: 0 0 auto;   }
 }
+/* ===== スマホで「注文詳細」の品目をしっかり見せる（#vendor-rows限定） ===== */
+@media (max-width:640px){
+
+  /* 固定レイアウトだと品目が圧迫されるので、この表だけ自動レイアウトに切替 */
+  #view-vendor #vendor-rows{
+    table-layout: auto;
+    font-size: 0.9em; /* 少しだけ縮小 */
+  }
+
+  /* ヘッダ「品目」は折り返さない（縦に崩れない） */
+  #view-vendor #vendor-rows thead th:nth-child(2){
+    white-space: nowrap;
+  }
+
+  /* ユーザーID／数量／金額は“最小幅だけ”確保（ch=文字幅ベース） */
+  #view-vendor #vendor-rows th:nth-child(1),
+  #view-vendor #vendor-rows td:nth-child(1){
+    width: 8ch;           /* 例: 8文字分。IDが長ければ適宜調整 */
+    white-space: nowrap;  /* IDは折り返さない */
+  }
+  #view-vendor #vendor-rows th:nth-child(3),
+  #view-vendor #vendor-rows td:nth-child(3){
+    width: 3.2ch;         /* 2桁＋余白程度 */
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  #view-vendor #vendor-rows th:nth-child(4),
+  #view-vendor #vendor-rows td:nth-child(4){
+    width: 6.5ch;         /* 4桁＋記号/カンマの少しの余裕 */
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* 品目セルは“残り全部”を使う。必要なら折り返しOK、長語も割る */
+  #view-vendor #vendor-rows th:nth-child(2),
+  #view-vendor #vendor-rows td:nth-child(2){
+    width: auto;                 /* ここが主役：余白は全部ここへ */
+  }
+  #view-vendor #vendor-rows td:nth-child(2){
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    overflow-wrap: anywhere;     /* 長い単語も途中で折る */
+    word-break: break-word;
+    min-width: 0;
+  }
+
+  /* 余白も少しタイトに */
+  #view-vendor #vendor-rows th,
+  #view-vendor #vendor-rows td{
+    padding: 6px 8px;
+    line-height: 1.25;
+  }
+}
+
 
   </style>
 </head>
@@ -277,7 +334,7 @@
  <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です00</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
