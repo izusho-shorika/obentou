@@ -4,174 +4,177 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <title>高校生を応援📣お弁当注文アプリ</title>
-  <style>
-    :root {
-      --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666;
-      --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05);
-      --radius:10px; --spacing:16px;
-    }
-    *{box-sizing:border-box}
-    html,body{
-      margin:0;background:var(--bg);color:var(--fg);
-      font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
-    }
-    header{position:sticky;top:0;background:var(--card-bg);border-bottom:1px solid var(--line);
-      padding:12px var(--spacing);z-index:10}
-    header h1{font-size:18px;margin:0}
-    main{padding:var(--spacing);max-width:720px;margin:0 auto}
-    .card{background:var(--card-bg);border:1px solid var(--line);border-radius:var(--radius);
-      padding:var(--spacing);margin:0px;box-shadow:var(--shadow)}
-    .row{display:flex;gap:10px;align-items:center}
-    .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    input,select,button,textarea{
-      font-size:16px;padding:12px;border-radius:8px;border:1px solid var(--line);
-      width:100%;margin:8px 0;transition:border-color .2s,background-color .2s,box-shadow .2s
-    }
-    textarea{min-height:120px;resize:vertical}
-    input:focus,select:focus,textarea:focus{
-      border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(74,144,226,.2)
-    }
-    button{background:var(--primary);color:#fff;border:none;font-weight:600;cursor:pointer}
-    button:hover{background:var(--primary-dark)}
-    button:active{background:var(--primary-dark);transform:scale(.99)}
-    button.ghost{background:#f1f5f9;color:var(--fg);border:1px solid var(--line)}
-    button.ghost:hover{background:#e2e8f0}
-    .danger{background:#d32f2f}.danger:hover{background:#c62828}
-    .list{display:flex;flex-direction:column;gap:10px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-    .list .item,.grid .item{
-      background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;
-      transition:border-color .2s,box-shadow .2s;cursor:pointer
-    }
-    .list .item:hover,.grid .item:hover{border-color:var(--primary)}
-    .list .item.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(74,144,226,.3)}
-    .muted{color:var(--muted);font-size:12px}
-    .price{font-variant-numeric:tabular-nums;font-weight:600;color:var(--primary-dark)}
-    .total{font-weight:700;font-size:20px;color:var(--fg)}
-    .hidden{display:none!important}
-    .center{text-align:center}
-    .footer-actions{position:sticky;bottom:0;background:var(--card-bg);border-top:1px solid var(--line);padding:12px var(--spacing)}
-    .tag{display:inline-block;background:#e6f0ff;color:var(--primary-dark);border-radius:999px;padding:4px 10px;font-size:12px;margin-left:8px}
-    .spacer{height:16px}
-    #btn-back-shop{width:auto!important;padding:8px 12px;font-size:14px;margin:0}
-    #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:9999;
-      display:flex;justify-content:center;align-items:center;flex-direction:column;
-      font-size:20px;color:var(--primary-dark);font-weight:bold}
-    .spinner{border:4px solid #f3f3f3;border-top:4px solid var(--primary);border-radius:50%;
-      width:40px;height:40px;margin-bottom:10px;animation:spin 1s linear infinite}
-    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-    .cal-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-    .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    @media (max-width:640px){
-      .cal-grid {grid-template-columns:1fr;}
-      .vendor-kpi {grid-template-columns:1fr;}
-      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-      .table-wrap table{min-width:520px;}
-    }
-
-    /* 履歴カードの枠色（カード型のまま） */
-    .order-card{border-width:2px;}
-    .order-pending{border-color:#3b82f6;}  /* 青=取消可 */
-    .order-confirmed{border-color:#ef4444;}/* 赤=取消不可 */
-
-    /* お知らせ（共通カード） */
-    .notice-title{font-weight:700;cursor:pointer}
-    .notice-body{margin-top:6px;font-size:14px;line-height:1.6;display:none;white-space:pre-wrap}
-    .notice-item{border-left:4px solid #e6f0ff;padding-left:8px}
-
-    /* ベンダーお知らせオプション行 */
-    .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    .row-wrap>label{display:flex;gap:6px;align-items:center}
-    .row-wrap>label>input[type="date"]{width:auto}
-
-    @media (max-width:640px){
-      .cal-grid {grid-template-columns:1fr;}
-      .vendor-kpi {grid-template-columns:1fr;}
-      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-      .table-wrap table{min-width:520px;}
-
-  /* 【修正】横スクロールと「表示期限」の飛び出しを解消 */
-  /* 1. row-wrap内のラベルを100%幅にし、確実に縦に積む */
-  .row-wrap>label{
-    flex: 1 1 100%; /* 縦積みを強制し、親要素の幅を超えないようにする */
-    min-width: 0;
+ <style>
+  :root {
+    --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666;
+    --line:#e0e0e0; --card-bg:#fff; --shadow:0 4px 6px rgba(0,0,0,.05);
+    --radius:10px; --spacing:16px;
   }
-  /* 2. date入力を含むラベル内の配置を調整し、入力欄を柔軟にする */
-  .row-wrap>label:first-child{
-      flex-wrap: nowrap; /* テキストと入力欄を一行に保つ */
-      justify-content: space-between; /* テキストと入力欄を両端に寄せる */
+  *{box-sizing:border-box}
+  html,body{
+    margin:0;background:var(--bg);color:var(--fg);
+    font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
   }
-  .row-wrap>label:first-child input[type="date"]{
-      flex-grow: 1; /* 入力欄が残りのスペースを埋める */
-      min-width: 100px; /* 日付ピッカーとして機能する最低限の幅を確保 */
+  header{position:sticky;top:0;background:var(--card-bg);border-bottom:1px solid var(--line);
+    padding:12px var(--spacing);z-index:10}
+  header h1{font-size:18px;margin:0}
+  main{padding:var(--spacing);max-width:720px;margin:0 auto}
+  .card{background:var(--card-bg);border:1px solid var(--line);border-radius:var(--radius);
+    padding:var(--spacing);margin:0px;box-shadow:var(--shadow)}
+  .row{display:flex;gap:10px;align-items:center}
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  input,select,button,textarea{
+    font-size:16px;padding:12px;border-radius:8px;border:1px solid var(--line);
+    width:100%;margin:8px 0;transition:border-color .2s,background-color .2s,box-shadow .2s
   }
-}
+  textarea{min-height:120px;resize:vertical}
+  input:focus,select:focus,textarea:focus{
+    border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(74,144,226,.2)
+  }
+  button{background:var(--primary);color:#fff;border:none;font-weight:600;cursor:pointer}
+  button:hover{background:var(--primary-dark)}
+  button:active{background:var(--primary-dark);transform:scale(.99)}
+  button.ghost{background:#f1f5f9;color:var(--fg);border:1px solid var(--line)}
+  button.ghost:hover{background:#e2e8f0}
+  .danger{background:#d32f2f}.danger:hover{background:#c62828}
+  .list{display:flex;flex-direction:column;gap:10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+  .list .item,.grid .item{
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;
+    transition:border-color .2s,box-shadow .2s;cursor:pointer
+  }
+  .list .item:hover,.grid .item:hover{border-color:var(--primary)}
+  .list .item.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(74,144,226,.3)}
+  .muted{color:var(--muted);font-size:12px}
+  .price{font-variant-numeric:tabular-nums;font-weight:600;color:var(--primary-dark)}
+  .total{font-weight:700;font-size:20px;color:var(--fg)}
+  .hidden{display:none!important}
+  .center{text-align:center}
+  .footer-actions{position:sticky;bottom:0;background:var(--card-bg);border-top:1px solid var(--line);padding:12px var(--spacing)}
+  .tag{display:inline-block;background:#e6f0ff;color:var(--primary-dark);border-radius:999px;padding:4px 10px;font-size:12px;margin-left:8px}
+  .spacer{height:16px}
+  #btn-back-shop{width:auto!important;padding:8px 12px;font-size:14px;margin:0}
+  #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:9999;
+    display:flex;justify-content:center;align-items:center;flex-direction:column;
+    font-size:20px;color:var(--primary-dark);font-weight:bold}
+  .spinner{border:4px solid #f3f3f3;border-top:4px solid var(--primary);border-radius:50%;
+    width:40px;height:40px;margin-bottom:10px;animation:spin 1s linear infinite}
+  @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+  .cal-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  
+  /* 履歴カードの枠色（カード型のまま） */
+  .order-card{border-width:2px;}
+  .order-pending{border-color:#3b82f6;} /* 青=取消可 */
+  .order-confirmed{border-color:#ef4444;}/* 赤=取消不可 */
 
-    /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
+  /* お知らせ（共通カード） */
+  .notice-title{font-weight:700;cursor:pointer}
+  .notice-body{margin-top:6px;font-size:14px;line-height:1.6;display:none;white-space:pre-wrap}
+  .notice-item{border-left:4px solid #e6f0ff;padding-left:8px}
+
+  /* ベンダーお知らせオプション行 */
+  .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .row-wrap>label{display:flex;gap:6px;align-items:center}
+  .row-wrap>label>input[type="date"]{width:auto}
+
+  /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
+  #view-login .status-grid, #view-login .status-row,
+  #view-shop .status-grid,  #view-shop .status-row{
+    display:grid;
+    grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
+    gap:10px; align-items:center;
+  }
+
+  /* --- 履歴カードをコンパクトに（view-shop内のみ） --- */
+  #view-shop .history-compact .item{
+    padding:10px;
+  }
+  #view-shop .history-compact h4{
+    font-size:14px; margin:0;
+  }
+  #view-shop .history-compact .muted{
+    font-size:12px;
+  }
+  #view-shop .history-compact .price{
+    font-size:14px;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0; border: 0;
+    clip: rect(0 0 0 0);
+    overflow: hidden;
+  }
+  
+  /* ================================================= */
+  /* 【統合・修正済み】狭い画面（640px以下）のレイアウト調整 */
+  /* ================================================= */
+  @media (max-width:640px){
+    /* 既存のレイアウト修正（テーブル横スクロール回避用など） */
+    .cal-grid {grid-template-columns:1fr;}
+    .vendor-kpi {grid-template-columns:1fr;}
+    .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .table-wrap table{min-width:520px;}
+
+    /* 【修正】横スクロールと「表示期限」「有効」の飛び出しを解消 */
+    /* 1. row-wrap内のラベルを100%幅にし、確実に縦に積む */
+    .row-wrap>label{
+      flex: 1 1 100%; /* 縦積みを強制し、親要素の幅を超えないようにする */
+      min-width: 0;
+    }
+    /* 2. date入力を含む最初のラベル内の配置を調整し、入力欄を柔軟にする */
+    .row-wrap>label:first-child{
+        flex-wrap: nowrap; /* テキストと入力欄を一行に保つ */
+        justify-content: space-between; /* テキストと入力欄を両端に寄せる */
+    }
+    .row-wrap>label:first-child input[type="date"]{
+        flex-grow: 1; /* 入力欄が残りのスペースを埋める */
+        min-width: 100px; /* 日付ピッカーとして機能する最低限の幅を確保 */
+    }
+    /* 3. 【最終修正】2番目のラベル（「有効」）を左寄せにする */
+    .row-wrap>label:nth-child(2){
+      justify-content: flex-start; /* 左寄せにしてコンテンツを確実に収める */
+    }
+
+    /* ログイン画面／ログイン後の営業情報（狭幅） */
     #view-login .status-grid, #view-login .status-row,
     #view-shop .status-grid,  #view-shop .status-row{
-      display:grid;
-      grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
-      gap:10px; align-items:center;
+      grid-template-columns: 1fr 60px 60px 60px;
     }
-    @media (max-width:640px){
-      #view-login .status-grid, #view-login .status-row,
-      #view-shop .status-grid,  #view-shop .status-row{
-        grid-template-columns: 1fr 60px 60px 60px;
-      }
-    }
-    /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
-    #status-header > div:not(:first-child),
-    #status-header-auth > div:not(:first-child){ text-align:right; }
-    /* ◯×セルは中央寄せ */
-    #view-login .status-row > div:nth-child(n+2),
-    #view-shop  .status-row > div:nth-child(n+2){ text-align:center; }
+  }
 
-    /* 長い店名を1行省略、縦に伸びない */
-    #view-login .shop-chip, #view-shop .shop-chip{
-      display:grid;
-      grid-template-columns: 28px 1fr; /* アバター + 店名 */
-      align-items:center;
-      gap:8px;
-      min-width:0;
-    }
-    #view-login .shop-name, #view-shop .shop-name{
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      min-width:0;
-    }
+  /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
+  #status-header > div:not(:first-child),
+  #status-header-auth > div:not(:first-child){ text-align:right; }
+  /* ◯×セルは中央寄せ */
+  #view-login .status-row > div:nth-child(n+2),
+  #view-shop  .status-row > div:nth-child(n+2){ text-align:center; }
 
-    /* そのほかログイン画面の既存スタイル */
-    #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
-    #view-login .badge-ok, #view-shop .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
-    #view-login .badge-ng, #view-shop .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
-    #view-login .shop-avatar, #view-shop .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
-    #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
-    #view-login .news-title{font-weight:700;line-height:1.5}
-    #view-login .news-date{font-size:12px;color:#667085}
-  
-    /* --- 履歴カードをコンパクトに（view-shop内のみ） --- */
-#view-shop .history-compact .item{
-  padding:10px;
-}
-#view-shop .history-compact h4{
-  font-size:14px; margin:0;
-}
-#view-shop .history-compact .muted{
-  font-size:12px;
-}
-#view-shop .history-compact .price{
-  font-size:14px;
-}
-.visually-hidden {
-  position: absolute;
-  width: 1px; height: 1px;
-  margin: -1px; padding: 0; border: 0;
-  clip: rect(0 0 0 0);
-  overflow: hidden;
-}
-  </style>
+  /* 長い店名を1行省略、縦に伸びない */
+  #view-login .shop-chip, #view-shop .shop-chip{
+    display:grid;
+    grid-template-columns: 28px 1fr; /* アバター + 店名 */
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+  #view-login .shop-name, #view-shop .shop-name{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    min-width:0;
+  }
+
+  /* そのほかログイン画面の既存スタイル */
+  #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
+  #view-login .badge-ok, #view-shop .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
+  #view-login .badge-ng, #view-shop .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
+  #view-login .shop-avatar, #view-shop .shop-avatar{width:28px;height:28px;border-radius:8px;background:#e6f0ff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;color:#3a79c9}
+  #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
+  #view-login .news-title{font-weight:700;line-height:1.5}
+  #view-login .news-date{font-size:12px;color:#667085}
+</style>
 </head>
 <body>
 <header><h1 class="visually-hidden">高校生を応援📣お弁当注文アプリ<span id="app-version" class="tag"></span></h1></header>
@@ -180,7 +183,7 @@
   <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です00</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
