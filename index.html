@@ -62,46 +62,11 @@
     @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
     .cal-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
     .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-
-    /* 受注状況テーブルの修正 */
-    #view-vendor table {
-      table-layout: fixed; /* カラム幅を制御しやすくする */
-      width: 100%; /* 親要素の幅いっぱいにする */
-      border-collapse: collapse;
-    }
-    /* ヘッダーとデータセル共通のスタイル調整 */
-    #view-vendor th, #view-vendor td {
-      padding: 8px 6px; /* パディングを少し調整 */
-      white-space: nowrap; /* テキストが折り返さないように */
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    /* 品目別集計 (.vendor-table-byitem) のアライメントと幅 */
-    .vendor-table-byitem th:nth-child(1),
-    .vendor-table-byitem td:nth-child(1) { text-align: left;  width: auto; } /* 品目名: 左揃え (可変幅) */
-    .vendor-table-byitem th:nth-child(2),
-    .vendor-table-byitem td:nth-child(2) { text-align: right; width: 60px; } /* 数量: 右揃え (2桁想定) */
-    .vendor-table-byitem th:nth-child(3),
-    .vendor-table-byitem td:nth-child(3) { text-align: center; width: 80px; } /* 金額: 中央揃え (4桁想定) */
-
-    /* 注文詳細 (.vendor-table-rows) のアライメントと幅 */
-    .vendor-table-rows th:nth-child(1),
-    .vendor-table-rows td:nth-child(1) { text-align: left; width: 80px; } /* ユーザーID: 左揃え (固定幅) */
-    .vendor-table-rows th:nth-child(2),
-    .vendor-table-rows td:nth-child(2) { text-align: left; width: auto; } /* 品目名: 左揃え (可変幅) */
-    .vendor-table-rows th:nth-child(3),
-    .vendor-table-rows td:nth-child(3) { text-align: right; width: 60px; } /* 数量: 右揃え (2桁想定) */
-    .vendor-table-rows th:nth-child(4),
-    .vendor-table-rows td:nth-child(4) { text-align: center; width: 80px; } /* 金額: 中央揃え (4桁想定) */
-
     @media (max-width:640px){
       .cal-grid {grid-template-columns:1fr;}
       .vendor-kpi {grid-template-columns:1fr;}
-      /* ▼ レスポンシブ修正: 横スクロールを強制しない */
-      .table-wrap{overflow-x:hidden;}
-      .table-wrap table{min-width:unset!important;}
-      /* ▲ レスポンシブ修正終わり */
+      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+      .table-wrap table{min-width:520px;}
     }
 
     /* 履歴カードの枠色（カード型のまま） */
@@ -193,7 +158,7 @@
   <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です00</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
@@ -296,7 +261,11 @@
       <h3 style="margin:0">品目別集計</h3>
       <div class="table-wrap">
         <table style="width:100%;border-collapse:collapse;margin-top:8px">
-          <thead><tr><th>品目</th><th style="width:90px">数量</th><th style="width:120px">金額</th></tr></thead>
+          <thead><tr>
+            <th style="text-align:left;">品目</th>
+            <th style="width:50px; text-align:right;">数量</th>
+            <th style="width:80px; text-align:center;">金額</th>
+          </tr></thead>
           <tbody id="vendor-byitem"></tbody>
         </table>
       </div>
@@ -307,7 +276,12 @@
       <h3 style="margin:0">注文詳細</h3>
       <div class="table-wrap">
         <table style="width:100%;border-collapse:collapse;margin-top:8px">
-          <thead><tr><th style="width:120px">ユーザーID</th><th>品目</th><th style="width:70px">数量</th><th style="width:120px">金額</th></tr></thead>
+          <thead><tr>
+            <th style="width:90px; text-align:left;">ユーザーID</th>
+            <th style="text-align:left;">品目</th>
+            <th style="width:50px; text-align:right;">数量</th>
+            <th style="width:80px; text-align:center;">金額</th>
+          </tr></thead>
           <tbody id="vendor-rows"></tbody>
         </table>
       </div>
@@ -993,6 +967,29 @@ $("#btn-news-refresh").onclick=()=> loadPublicOverview(true);
 $("#btn-public-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
 $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
 
+/* =========================
+   初期化
+========================= */
+(async()=>{
+  loadPublicOverview(); // 未ログインでも表示
+  const token=store.get("token"); const user=store.get("user");
+  if(token&&user){
+    state.me=user;
+    if(/^s\d+$/i.test(user.id)){
+      await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]);
+      setDefaultVisibleUntil();
+      show("view-vendor");
+    }else{
+      $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
+      await loadDashboard();
+      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報＆新着（最新1件）
+      show("view-shop");
+    }
+  }else{
+    show("view-login");
+  }
+})();
+
 /* ====== 安定化パッチ（apiを引数渡し方式に修正） ====== */
 (function(){
   // 既存NETがなければ定義
@@ -1098,29 +1095,6 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
       if(typeof showLoading==="function") showLoading(false);
     }
   });
-})();
-
-/* =========================
-   初期化
-========================= */
-(async()=>{
-  loadPublicOverview(); // 未ログインでも表示
-  const token=store.get("token"); const user=store.get("user");
-  if(token&&user){
-    state.me=user;
-    if(/^s\d+$/i.test(user.id)){
-      await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]);
-      setDefaultVisibleUntil();
-      show("view-vendor");
-    }else{
-      $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
-      await loadDashboard();
-      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報＆新着（最新1件）
-      show("view-shop");
-    }
-  }else{
-    show("view-login");
-  }
 })();
 </script>
 
