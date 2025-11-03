@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <title>高校生を応援📣お弁当注文アプリ</title>
+  <link rel="icon" href="data:,"><!-- 404防止のダミーfavicon -->
+
   <style>
     :root {
       --primary:#4a90e2; --primary-dark:#3a79c9; --bg:#f7f9fc; --fg:#1a1a1a; --muted:#666;
@@ -11,26 +13,16 @@
       --radius:10px; --spacing:16px;
     }
     *{box-sizing:border-box}
-    html,body{
-      margin:0;background:var(--bg);color:var(--fg);
-      font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
-    }
-    header{position:sticky;top:0;background:var(--card-bg);border-bottom:1px solid var(--line);
-      padding:12px var(--spacing);z-index:10}
+    html,body{margin:0;background:var(--bg);color:var(--fg);font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
+    header{position:sticky;top:0;background:var(--card-bg);border-bottom:1px solid var(--line);padding:12px var(--spacing);z-index:10}
     header h1{font-size:18px;margin:0}
     main{padding:var(--spacing);max-width:720px;margin:0 auto}
-    .card{background:var(--card-bg);border:1px solid var(--line);border-radius:var(--radius);
-      padding:var(--spacing);margin:0px;box-shadow:var(--shadow)}
+    .card{background:var(--card-bg);border:1px solid var(--line);border-radius:var(--radius);padding:var(--spacing);margin:0;box-shadow:var(--shadow)}
     .row{display:flex;gap:10px;align-items:center}
     .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    input,select,button,textarea{
-      font-size:16px;padding:12px;border-radius:8px;border:1px solid var(--line);
-      width:100%;margin:8px 0;transition:border-color .2s,background-color .2s,box-shadow .2s
-    }
+    input,select,button,textarea{font-size:16px;padding:12px;border-radius:8px;border:1px solid var(--line);width:100%;margin:8px 0;transition:border-color .2s,background-color .2s,box-shadow .2s}
     textarea{min-height:120px;resize:vertical}
-    input:focus,select:focus,textarea:focus{
-      border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(74,144,226,.2)
-    }
+    input:focus,select:focus,textarea:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(74,144,226,.2)}
     button{background:var(--primary);color:#fff;border:none;font-weight:600;cursor:pointer}
     button:hover{background:var(--primary-dark)}
     button:active{background:var(--primary-dark);transform:scale(.99)}
@@ -39,10 +31,7 @@
     .danger{background:#d32f2f}.danger:hover{background:#c62828}
     .list{display:flex;flex-direction:column;gap:10px}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-    .list .item,.grid .item{
-      background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;
-      transition:border-color .2s,box-shadow .2s;cursor:pointer
-    }
+    .list .item,.grid .item{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;transition:border-color .2s,box-shadow .2s;cursor:pointer}
     .list .item:hover,.grid .item:hover{border-color:var(--primary)}
     .list .item.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(74,144,226,.3)}
     .muted{color:var(--muted);font-size:12px}
@@ -54,73 +43,28 @@
     .tag{display:inline-block;background:#e6f0ff;color:var(--primary-dark);border-radius:999px;padding:4px 10px;font-size:12px;margin-left:8px}
     .spacer{height:16px}
     #btn-back-shop{width:auto!important;padding:8px 12px;font-size:14px;margin:0}
-    #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:9999;
-      display:flex;justify-content:center;align-items:center;flex-direction:column;
-      font-size:20px;color:var(--primary-dark);font-weight:bold}
-    .spinner{border:4px solid #f3f3f3;border-top:4px solid var(--primary);border-radius:50%;
-      width:40px;height:40px;margin-bottom:10px;animation:spin 1s linear infinite}
+    #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:9999;display:flex;justify-content:center;align-items:center;flex-direction:column;font-size:20px;color:var(--primary-dark);font-weight:bold}
+    .spinner{border:4px solid #f3f3f3;border-top:4px solid var(--primary);border-radius:50%;width:40px;height:40px;margin-bottom:10px;animation:spin 1s linear infinite}
     @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-    .cal-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-    .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    @media (max-width:640px){
-      .cal-grid {grid-template-columns:1fr;}
-      .vendor-kpi {grid-template-columns:1fr;}
-      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-      .table-wrap table{min-width:520px;}
-    }
-
-    /* 履歴カードの枠色（カード型のまま） */
-    .order-card{border-width:2px;}
-    .order-pending{border-color:#3b82f6;}  /* 青=取消可 */
-    .order-confirmed{border-color:#ef4444;}/* 赤=取消不可 */
-
-    /* お知らせ（共通カード） */
+    .cal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .vendor-kpi{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:640px){.cal-grid{grid-template-columns:1fr}.vendor-kpi{grid-template-columns:1fr}.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.table-wrap table{min-width:520px}}
+    .order-card{border-width:2px}.order-pending{border-color:#3b82f6}.order-confirmed{border-color:#ef4444}
     .notice-title{font-weight:700;cursor:pointer}
     .notice-body{margin-top:6px;font-size:14px;line-height:1.6;display:none;white-space:pre-wrap}
     .notice-item{border-left:4px solid #e6f0ff;padding-left:8px}
-
-    /* ベンダーお知らせオプション行 */
     .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
     .row-wrap>label{display:flex;gap:6px;align-items:center}
     .row-wrap>label>input[type="date"]{width:auto}
     @media (max-width:640px){.row-wrap>label{flex:1 1 180px}}
-
-    /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
+    /* ▼ ログイン/ログイン後の営業情報の整列 */
     #view-login .status-grid, #view-login .status-row,
-    #view-shop .status-grid,  #view-shop .status-row{
-      display:grid;
-      grid-template-columns: 1fr 72px 72px 72px; /* 店名は可変、◯×は固定幅で完全整列 */
-      gap:10px; align-items:center;
-    }
-    @media (max-width:640px){
-      #view-login .status-grid, #view-login .status-row,
-      #view-shop .status-grid,  #view-shop .status-row{
-        grid-template-columns: 1fr 60px 60px 60px;
-      }
-    }
-    /* ヘッダの日付は右寄せ（下の◯×列と端を揃える） */
-    #status-header > div:not(:first-child),
-    #status-header-auth > div:not(:first-child){ text-align:right; }
-    /* ◯×セルは中央寄せ */
-    #view-login .status-row > div:nth-child(n+2),
-    #view-shop  .status-row > div:nth-child(n+2){ text-align:center; }
-
-    /* 長い店名を1行省略、縦に伸びない */
-    #view-login .shop-chip, #view-shop .shop-chip{
-      display:grid;
-      grid-template-columns: 28px 1fr; /* アバター + 店名 */
-      align-items:center;
-      gap:8px;
-      min-width:0;
-    }
-    #view-login .shop-name, #view-shop .shop-name{
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      min-width:0;
-    }
-
-    /* そのほかログイン画面の既存スタイル */
+    #view-shop .status-grid,  #view-shop .status-row{display:grid;grid-template-columns: 1fr 72px 72px 72px;gap:10px;align-items:center}
+    @media (max-width:640px){#view-login .status-grid,#view-login .status-row,#view-shop .status-grid,#view-shop .status-row{grid-template-columns:1fr 60px 60px 60px}}
+    #status-header > div:not(:first-child), #status-header-auth > div:not(:first-child){text-align:right}
+    #view-login .status-row > div:nth-child(n+2), #view-shop .status-row > div:nth-child(n+2){text-align:center}
+    #view-login .shop-chip, #view-shop .shop-chip{display:grid;grid-template-columns:28px 1fr;align-items:center;gap:8px;min-width:0}
+    #view-login .shop-name, #view-shop .shop-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
     #view-login .pill-day{font-size:12px;background:#f2f4f7;border-radius:999px;padding:4px 10px;display:inline-block}
     #view-login .badge-ok, #view-shop .badge-ok{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#e9fbef;color:#16a34a;border:1px solid #bbf7d0}
     #view-login .badge-ng, #view-shop .badge-ng{display:inline-flex;align-items:center;justify-content:center;font-weight:800;border-radius:8px;padding:6px 0;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3}
@@ -128,31 +72,21 @@
     #view-login .news-item{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start;background:#fff}
     #view-login .news-title{font-weight:700;line-height:1.5}
     #view-login .news-date{font-size:12px;color:#667085}
-  
-    /* --- 履歴カードをコンパクトに（view-shop内のみ） --- */
-    #view-shop .history-compact .item{ padding:10px; }
-    #view-shop .history-compact h4{ font-size:14px; margin:0; }
-    #view-shop .history-compact .muted{ font-size:12px; }
-    #view-shop .history-compact .price{ font-size:14px; }
-
-    .visually-hidden {
-      position: absolute;
-      width: 1px; height: 1px;
-      margin: -1px; padding: 0; border: 0;
-      clip: rect(0 0 0 0);
-      overflow: hidden;
-    }
+    #view-shop .history-compact .item{padding:10px}
+    #view-shop .history-compact h4{font-size:14px;margin:0}
+    #view-shop .history-compact .muted{font-size:12px}
+    #view-shop .history-compact .price{font-size:14px}
+    .visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip:rect(0 0 0 0);overflow:hidden}
   </style>
 </head>
 <body>
-<header><h1 class="visually-hidden">高校生を応援📣お弁当注文アプリ<span id="app-version" class="tag"></span></h1></header>
+<header><h1 class="visually-hidden">高校生を応援📣お弁当注文アプリ <span id="app-version" class="tag"></span></h1></header>
 
 <main>
   <!-- ログイン -->
   <section id="view-login" class="card">
-    <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
-       style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-    <p style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です01</p>
+    <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ" style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
+    <p style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
     <div style="padding-top:10px">
       <input id="login-id" placeholder="ログインID（例：20251101）">
       <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
@@ -165,20 +99,16 @@
   <!-- 生徒（ログイン後） -->
   <section id="view-shop" class="hidden">
     <h3 id="welcome-message" style="margin-top:0;font-weight:normal"></h3>
-
-    <!-- 弁当屋を選択 -->
     <div class="card">
       <h3 style="margin-top:0">お店を選ぶ</h3>
       <div id="shop-cards" class="list"></div>
     </div>
-
-    <!-- 購入履歴 -->
     <div class="card">
       <h3 style="margin-top:0">最近の注文（最新2件）</h3>
       <div id="history-list" class="list"></div>
     </div>
 
-    <!-- 営業情報（ログイン後用：auth） -->
+    <!-- 営業情報（ログイン後） -->
     <div id="public-status-card-auth" class="card">
       <div class="row-between">
         <h3 style="margin:0">営業情報</h3>
@@ -186,7 +116,7 @@
       </div>
       <p class="muted" style="margin:6px 0 10px 0">当日から3日分の注文可否（◯=注文可能 / ×=注文不可）。</p>
       <div id="status-header-auth" class="status-grid muted" style="font-weight:700">
-        <div class="col-hide-sm"></div>
+        <div></div>
         <div><span class="pill-day" id="day0-label-auth">—</span></div>
         <div><span class="pill-day" id="day1-label-auth">—</span></div>
         <div><span class="pill-day" id="day2-label-auth">—</span></div>
@@ -195,7 +125,7 @@
       <p id="status-empty-auth" class="muted" style="margin:8px 0 0 0;display:none">現在、表示できる店舗がありません。</p>
     </div>
 
-    <!-- 新着情報（ログイン後用：auth：最新1件のみ表示、本文展開） -->
+    <!-- 新着情報（ログイン後） -->
     <div id="public-news-card-auth" class="card">
       <div class="row-between">
         <h3 style="margin:0">新着情報</h3>
@@ -210,7 +140,6 @@
 
   <!-- メニュー（生徒） -->
   <section id="view-menu" class="hidden">
-    <!-- お店からのお知らせ -->
     <div id="notice-card" class="card hidden">
       <h3 style="margin-top:0">お店からのお知らせ</h3>
       <div id="notice-list" class="list"></div>
@@ -254,12 +183,10 @@
       <h3 id="vendor-title" style="margin:0">受注状況</h3>
       <p class="muted" id="vendor-sub" style="margin:6px 0 0 0">—</p>
     </div>
-
     <div class="card vendor-kpi">
       <div class="item center" style="cursor:default"><div class="muted">総点数</div><div style="font-size:28px;font-weight:900" id="kpi-qty">0</div></div>
       <div class="item center" style="cursor:default"><div class="muted">総金額</div><div style="font-size:28px;font-weight:900" id="kpi-amount">¥0</div></div>
     </div>
-
     <div class="card">
       <h3 style="margin:0">品目別集計</h3>
       <div class="table-wrap">
@@ -270,7 +197,6 @@
       </div>
       <p class="muted" id="vendor-byitem-empty" style="margin:8px 0 0 0;display:none">注文がありません。</p>
     </div>
-
     <div class="card">
       <h3 style="margin:0">注文詳細</h3>
       <div class="table-wrap">
@@ -282,20 +208,16 @@
       <p class="muted" id="vendor-rows-empty" style="margin:8px 0 0 0;display:none">注文がありません。</p>
     </div>
 
-    <!-- お店からのお知らせ（入力＆最新3件） -->
+    <!-- お知らせ投稿 -->
     <div class="card">
       <h3 style="margin:0">お店からのお知らせ（投稿）</h3>
       <p class="muted" style="margin:6px 0 8px 0">プレーンテキスト＋改行のみ（URLは自動リンクされます）</p>
       <input id="msg-title" placeholder="タイトル">
       <textarea id="msg-body" placeholder="内容（プレーンテキスト、改行可）"></textarea>
-
       <div class="row-wrap" style="margin-top:2px">
-        <label>表示期限（任意）
-          <input type="date" id="msg-visible-until">
-        </label>
+        <label>表示期限（任意）<input type="date" id="msg-visible-until"></label>
         <label><input type="checkbox" id="msg-enabled" checked> 有効</label>
       </div>
-
       <div class="row" style="margin-top:8px">
         <button class="ghost" id="btn-msg-refresh" style="width:auto">再読込</button>
         <button id="btn-msg-save" style="width:auto">保存</button>
@@ -307,7 +229,7 @@
       <p id="vendor-msg-empty" class="muted" style="margin:6px 0 0 0">まだお知らせはありません。</p>
     </div>
 
-    <!-- 定休日設定 -->
+    <!-- 定休日 -->
     <div class="card">
       <h3 style="margin:0">定休日の設定</h3>
       <p class="muted" style="margin:6px 0 12px 0">当月と翌月の休業日を選択し、「保存」で反映します（丸ごと上書き）。</p>
@@ -326,15 +248,132 @@
   </section>
 </main>
 
-<div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
+<div id="loading-overlay" class="hidden"><div class="spinner"></div>読み込み中...</div>
 
+<!-- ====== 1) 先に：安定化パッチ（api定義／完全読込→表示）。順序を最優先！ ====== -->
+<script>
+(function(){
+  // 設定（タイムアウト少し緩める）
+  window.NET = Object.assign({ BASE_TIMEOUT: 12000, MAX_RETRIES: 2, BACKOFF_MS: 800 }, window.NET||{});
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+  // ローダー参照カウント
+  const LOADER = { n:0, on(){ this.n++; if(typeof showLoading==="function") showLoading(true); },
+                        off(){ this.n=Math.max(0,this.n-1); if(typeof showLoading==="function") showLoading(this.n>0); },
+                        wrap(p){ this.on(); return Promise.resolve(p).finally(()=>this.off()); } };
+
+  // timeout付きfetch
+  async function fetchWithTimeout(input,init,timeoutMs){
+    const ctrl=new AbortController();
+    const id=setTimeout(()=>ctrl.abort(),timeoutMs);
+    try{ return await fetch(input,{...(init||{}),signal:ctrl.signal}); }
+    finally{ clearTimeout(id); }
+  }
+
+  // APIコア（tmo引数を採用）
+  window.apiCore = async function apiCore(fn,method="GET",body=null,tmo){
+    const token=window.store?.get?.("token")||null;
+    const base=window.ENDPOINT_URL; // ← mainが後で設定。呼ぶ時点では必ず存在させる（下の待機で保証）
+    if(!base) throw new Error("ENDPOINT_URL not set");
+    const u=new URL(base); u.searchParams.set("fn",fn);
+
+    let init={};
+    if(method==="GET"){
+      if(token) u.searchParams.set("token",token);
+      if(body) for(const [k,v] of Object.entries(body)) u.searchParams.set(k, typeof v==="object"?JSON.stringify(v):String(v));
+    }else{
+      const f=new URLSearchParams();
+      if(body) for(const [k,v] of Object.entries(body)) f.append(k, typeof v==="object"?JSON.stringify(v):String(v));
+      if(token) f.append("token",token);
+      init={method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:f};
+    }
+    const timeout=(typeof tmo==="number"?tmo:(window.NET?.BASE_TIMEOUT||12000));
+    const res=await fetchWithTimeout(u,init,timeout);
+    const text=await res.text();
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText} - ${text.slice(0,120)}`);
+    return JSON.parse(text||"{}");
+  };
+
+  // api（指数バックオフ＋ローダー）
+  window.api = async function api(fn,method="GET",body=null,opts={}){
+    const timeoutMs=(typeof opts.timeoutMs==="number")?opts.timeoutMs:window.NET.BASE_TIMEOUT;
+    const retries=(typeof opts.retries==="number")?opts.retries:window.NET.MAX_RETRIES;
+    const withLoader=("withLoader" in opts)?!!opts.withLoader:true;
+    const run=(async()=>{
+      for(let a=0;a<=retries;a++){
+        const tmo=timeoutMs*Math.pow(3,a); // 12s→36s→108s
+        try{ return await window.apiCore(fn,method,body,tmo); }
+        catch(e){ if(a===retries) throw e; await sleep(window.NET.BACKOFF_MS*(a+1)); }
+      }
+    })();
+    return withLoader?LOADER.wrap(run):run;
+  };
+
+  // 条件待ちヘルパ
+  function waitFor(cond, timeout=15000){
+    const start=Date.now();
+    return new Promise(resolve=>{
+      const t=setInterval(()=>{
+        if(cond()){ clearInterval(t); resolve(true); }
+        else if(Date.now()-start>timeout){ clearInterval(t); resolve(false); }
+      }, 20);
+    });
+  }
+
+  // doLogin を「定義されたら」ラップする（順序入替でも安全）
+  (function wrapDoLoginWhenReady(){
+    const t=setInterval(()=>{
+      if(typeof window.doLogin==='function'){
+        const orig=window.doLogin;
+        window.doLogin = async function(){
+          try{ await orig(); }catch{ return; }
+          const user=window.store?.get?.("user")||null;
+          if(!user||user.role==="vendor") return;
+          await LOADER.wrap(Promise.all([
+            typeof loadDashboard==="function" ? loadDashboard() : Promise.resolve(),
+            typeof loadPublicOverviewAuth==="function" ? loadPublicOverviewAuth() : Promise.resolve()
+          ]));
+          const wm=document.querySelector("#welcome-message");
+          if(wm) wm.textContent=`ようこそ、${user.name||user.id}さん`;
+          if(typeof show==="function") show("view-shop");
+        };
+        clearInterval(t);
+      }
+    }, 20);
+  })();
+
+  // 自動ログイン時：mainが ENDPOINT_URL と各関数を用意するまで待つ
+  document.addEventListener("DOMContentLoaded", async ()=>{
+    // ENDPOINT_URL と 初期関数の用意を待機
+    await waitFor(()=> !!window.ENDPOINT_URL, 15000);
+    const token=window.store?.get?.("token")||null;
+    const user=window.store?.get?.("user")||null;
+    if(!token||!user||user.role==="vendor") return;
+
+    // 静かに初期ロード（ローダーOFF／timeout余裕）
+    const origApi=window.api;
+    window.api=(f,m,b,o={})=>origApi(f,m,b,Object.assign({withLoader:false,timeoutMs:12000,retries:1},o));
+    try{
+      if(typeof loadDashboard==="function") await loadDashboard();
+      if(typeof loadPublicOverviewAuth==="function") await loadPublicOverviewAuth();
+      const wm=document.querySelector("#welcome-message");
+      if(wm) wm.textContent=`ようこそ、${user.name||user.id}さん`;
+      if(typeof show==="function") show("view-shop");
+    }finally{
+      window.api=origApi;
+    }
+  });
+})();
+</script>
+
+<!-- ====== 2) 後に：アプリ本体（UI/ロジック） ====== -->
 <script>
 /* =========================
    基本情報
 ========================= */
 const APP_VERSION="v2.5.5";
-const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbwc8ZjkMOzJqr4oa7PNRI2l7y9IKHuaOAeK-Q5uzso_7z0neYgF0u5H5_i44wyZdXzvgw/exec"; // ← あなたのGAS /exec に差し替え
-window.ENDPOINT_URL = ENDPOINT_URL; // ★ 安定化パッチが参照するため window に公開
+const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbzlat2z0qz1z8y1j490pSFTxbgnmCQY8c7l73rruoWSAcnhMPXy3q3zDQctoSEZpaD6gg/exec"; // ← あなたのGAS /exec に差し替え
+window.ENDPOINT_URL = ENDPOINT_URL; // ★ apiが読むため公開
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
 const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).toString().padStart(2,"0")}:${String(d.getMinutes()).toString().padStart(2,"0")}`};
@@ -343,14 +382,12 @@ const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return`${d.getFullYea
    軽量ストア＆キャッシュ
 ========================= */
 const store={ set(k,v){localStorage.setItem(k,JSON.stringify(v))}, get(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}, del(k){localStorage.removeItem(k)} };
-const cache={
-  get(key, ttlSec){ const raw=localStorage.getItem(`cache:${key}`); if(!raw) return null; try{ const {t,v}=JSON.parse(raw); if(Date.now()-t>ttlSec*1000) return null; return v; }catch{ return null; } },
-  set(key, value){ localStorage.setItem(`cache:${key}`, JSON.stringify({t: Date.now(), v:value})) },
-  del(key){ localStorage.removeItem(`cache:${key}`) }
-};
+const cache={ get(key, ttlSec){ const raw=localStorage.getItem(`cache:${key}`); if(!raw) return null; try{ const {t,v}=JSON.parse(raw); if(Date.now()-t>ttlSec*1000) return null; return v; }catch{ return null; } },
+              set(key, value){ localStorage.setItem(`cache:${key}`, JSON.stringify({t: Date.now(), v:value})) },
+              del(key){ localStorage.removeItem(`cache:${key}`) } };
 
 /* =========================
-   遅延ローダー
+   ローディング
 ========================= */
 let _loaderTimer=null;
 function showLoading(on){
@@ -359,7 +396,7 @@ function showLoading(on){
     _loaderTimer=setTimeout(()=>{
       $("#loading-overlay").classList.remove("hidden");
       $$("input,button,select,textarea").forEach(e=>e.disabled=true);
-    }, 300);
+    },300);
   }else{
     $("#loading-overlay").classList.add("hidden");
     $$("input,button,select,textarea").forEach(e=>e.disabled=false);
@@ -382,10 +419,9 @@ const Text={ autoLinkAndBreaks(text){ const safe=document.createElement('div'); 
 let state={ me:null, shops:[], chosenShop:null, menu:[], cart:[] };
 
 /* =========================
-   公開ビュー：営業情報＋新着情報（未ログイン）
+   公開ビュー（未ログイン）
 ========================= */
 async function loadPublicOverview(force=false){
-  // ラベル
   const today=new Date();
   const dates=[0,1,2].map(n=>new Date(today.getFullYear(),today.getMonth(),today.getDate()+n));
   ['day0-label','day1-label','day2-label'].forEach((id,i)=>{
@@ -393,11 +429,9 @@ async function loadPublicOverview(force=false){
     const el=document.getElementById(id); if(el) el.textContent=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）`;
   });
 
-  // キャッシュ即時描画（60秒）
   const cOverview=cache.get('public_overview',60); if(cOverview) renderOverview(cOverview);
   const cNews=cache.get('latest_news',60);       if(cNews)     renderNews(cNews);
 
-  // 最新取得
   try{ const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('public_overview',d); renderOverview(d);}catch(e){}
   try{ const n=await api('latest_messages_all','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('latest_news',n); renderNews(n);}catch(e){}
 }
@@ -448,10 +482,9 @@ async function renderNews(n){
 }
 
 /* =========================
-   ログイン後ビュー：営業情報＋新着情報（auth）
+   ログイン後ビュー（auth）
 ========================= */
 async function loadPublicOverviewAuth(force=false){
-  // ラベル（auth）
   const today=new Date();
   const dates=[0,1,2].map(n=>new Date(today.getFullYear(),today.getMonth(),today.getDate()+n));
   ['day0-label-auth','day1-label-auth','day2-label-auth'].forEach((id,i)=>{
@@ -459,11 +492,9 @@ async function loadPublicOverviewAuth(force=false){
     const el=document.getElementById(id); if(el) el.textContent=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）`;
   });
 
-  // キャッシュ即時描画（60秒）
   const cOverview=cache.get('public_overview',60); if(cOverview) renderOverviewAuth(cOverview);
   const cNews=cache.get('latest_news',60);       if(cNews)     renderNewsAuth(cNews);
 
-  // 最新取得
   try{ const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('public_overview',d); renderOverviewAuth(d);}catch(e){}
   try{ const n=await api('latest_messages_all','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('latest_news',n); renderNewsAuth(n);}catch(e){}
 }
@@ -486,42 +517,28 @@ function renderOverviewAuth(d){
     rows.appendChild(div);
   });
 }
-// ▼ 各ベンダー“最新1件ずつ”表示（本文は最初から展開）
 async function renderNewsAuth(n){
-  const list = $("#news-list-auth");
-  if(!list) return;
+  const list = $("#news-list-auth"); if(!list) return;
   list.innerHTML = '';
-
   const news = (n && n.news) ? n.news.slice() : [];
-  if(!news.length){
-    $("#news-empty-auth").style.display = 'block';
-    return;
-  }
+  if(!news.length){ $("#news-empty-auth").style.display = 'block'; return; }
   $("#news-empty-auth").style.display = 'none';
 
-  // 1) 全体を日付降順に並べ替え
   news.sort((a,b)=>{
     const ta = a.updated_at ? Date.parse(a.updated_at) : 0;
     const tb = b.updated_at ? Date.parse(b.updated_at) : 0;
     return tb - ta;
   });
 
-  // 2) shop_idごとに最初の1件だけ採用
-  const seen = new Set();
-  const perVendor = [];
+  const seen = new Set(); const perVendor = [];
   for(const item of news){
     const sid = String(item.shop_id || '');
-    if(sid && !seen.has(sid)){
-      perVendor.push(item);
-      seen.add(sid);
-    }
+    if(sid && !seen.has(sid)){ perVendor.push(item); seen.add(sid); }
   }
 
-  // 3) 1ベンダー=1カードを描画（本文は item.body が無ければAPIで取得）
   for(const item of perVendor){
     const d = item.updated_at ? new Date(item.updated_at) : null;
     const ymd = d ? `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${['日','月','火','水','木','金','土'][d.getDay()]}）` : '';
-
     const row = document.createElement('div');
     row.className = 'news-item';
     row.innerHTML = `
@@ -533,7 +550,6 @@ async function renderNewsAuth(n){
       </div>
     `;
     const bodyEl = row.querySelector('.notice-body');
-
     if(item.body && item.body.trim()){
       bodyEl.innerHTML = Text.autoLinkAndBreaks(item.body);
     }else{
@@ -541,9 +557,7 @@ async function renderNewsAuth(n){
         const res = await api('messages','GET',{shop_id:item.shop_id},{withLoader:false,timeoutMs:5000,retries:0});
         const first = (res.ok && res.list && res.list[0]) ? res.list[0] : null;
         bodyEl.innerHTML = first ? Text.autoLinkAndBreaks(first.body||'') : '（本文はありません）';
-      }catch(e){
-        bodyEl.innerHTML = '（本文の取得に失敗しました）';
-      }
+      }catch(e){ bodyEl.innerHTML = '（本文の取得に失敗しました）'; }
     }
     bodyEl.style.display = 'block';
     list.appendChild(row);
@@ -553,7 +567,6 @@ async function renderNewsAuth(n){
 /* =========================
    ログイン
 ========================= */
-// ログイン（ID+4桁PW）
 async function doLogin(){
   const id=$("#login-id").value.trim(), pass=$("#login-pass").value.trim(), err=$("#login-error");
   err.textContent="";
@@ -561,7 +574,7 @@ async function doLogin(){
   if(!/^\d{4}$/.test(pass)){err.textContent="パスワードは4桁の数字です";return}
 
   try{
-    // ★ タイムアウトを12秒・再試行1回に拡大（コールドスタート対策）
+    // コールドスタート対策：12s+再試行1
     const d=await api("login","POST",{id,password:pass},{timeoutMs:12000,retries:1});
     if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
 
@@ -569,14 +582,11 @@ async function doLogin(){
     state.me=d.user;
 
     if(/^s\d+/i.test(state.me.id)){ // ベンダー
-      const p1=loadVendorSummary();
-      const p2=VendorMessages.load();
-      const p3=ClosedDays.load();
+      const p1=loadVendorSummary(), p2=VendorMessages.load(), p3=ClosedDays.load();
       setDefaultVisibleUntil();
       await Promise.all([p1,p2,p3]);
       show("view-vendor");
-    } else { // 生徒
-      // ここではスケルトンだけ差し込む（完全読込→表示は安定化パッチ側で統一）
+    } else { // 生徒（安定化パッチが完全読込→表示に統一してくれる）
       $("#shop-cards").innerHTML = '<div class="item muted">店舗を読み込み中...</div>';
       $("#history-list").innerHTML = '<div class="item muted">履歴を読み込み中...</div>';
     }
@@ -592,7 +602,7 @@ async function loadDashboard(){
   const d=await api("dashboard","GET",null,{timeoutMs:6000,retries:0});
   state.shops=d.shops||[];
 
-  // 店リスト（カード）
+  // 店リスト
   const box=$("#shop-cards"); box.innerHTML="";
   for(const s of state.shops){
     const div=document.createElement("div"); div.className="item";
@@ -601,21 +611,18 @@ async function loadDashboard(){
     box.appendChild(div);
   }
 
-  // 履歴（最新2件・コンパクト）
+  // 履歴（最新2件）
   const list=$("#history-list");
   list.classList.add('history-compact');
   list.innerHTML="";
   const hist=(d.history||[]).slice(0,2);
 
   const trim = (s, n)=> (s.length>n ? (s.slice(0,n-1)+'…') : s);
-
   for(const h of hist){
     const card=document.createElement("div");
     card.className=`item order-card ${h.cancellable?'order-pending':'order-confirmed'}`;
-
     const itemsText = h.items.map(i=>`${i.item}（${fmtYen(i.unit_price)}）`).join("、");
     const itemsShort = trim(itemsText, 42);
-
     card.innerHTML=`
       <div class="row-between">
         <h4>${trim(h.shop_name, 18)}</h4>
@@ -627,7 +634,6 @@ async function loadDashboard(){
         ${h.cancellable ? '<button class="ghost btn-cancel" style="width:auto;padding:4px 8px;margin:0;font-size:12px">取消</button>' : ''}
       </div>
     `;
-
     const btn=card.querySelector('.btn-cancel');
     if(btn){
       btn.onclick=async()=>{
@@ -645,13 +651,12 @@ async function loadDashboard(){
 }
 
 /* =========================
-   生徒：メニュー遷移（並列＋キャッシュ）
+   生徒：メニュー/カート/注文
 ========================= */
 async function enterMenu(){
   const sid=state.chosenShop.shop_id;
   $("#shop-title").textContent=state.chosenShop.shop_name;
 
-  // キャッシュ即時表示（5分）
   const cacheKeyMsg=`msg_${sid}`;
   const cacheKeyMenu=`menu_${sid}`;
   const cMsg=cache.get(cacheKeyMsg,300);
@@ -665,22 +670,15 @@ async function enterMenu(){
       api('messages','GET',{shop_id:sid},{withLoader:false,timeoutMs:7000,retries:0}),
       api('menu','GET',{shop_id:sid},{withLoader:false,timeoutMs:7000,retries:0})
     ]);
-
     const list = msgRes.ok ? (msgRes.list||[]) : [];
-    renderShopMessages(list);
-    cache.set(cacheKeyMsg, list);
-
+    renderShopMessages(list); cache.set(cacheKeyMsg, list);
     const menuAll = (menuRes.menu||[]);
     state.menu = menuAll.filter(m=>String(m.shop_id)===String(sid) && String(m.enabled)!=='FALSE');
-    renderMenu();
-    cache.set(cacheKeyMenu, state.menu);
-
+    renderMenu(); cache.set(cacheKeyMenu, state.menu);
     state.cart=[]; renderCart();
     show("view-menu");
   } finally { showLoading(false); }
 }
-
-// 生徒向け お知らせ（最新は展開）
 function renderShopMessages(list){
   const wrap=$('#notice-list'); const empty=$('#notice-empty'); const card=$('#notice-card');
   if(!wrap||!empty||!card) return;
@@ -707,10 +705,6 @@ function renderShopMessages(list){
     wrap.appendChild(item);
   });
 }
-
-/* =========================
-   生徒：メニュー/カート/注文
-========================= */
 function renderMenu(){
   const box=$("#menu-cards"); box.innerHTML="";
   if(!state.menu.length){
@@ -757,7 +751,6 @@ async function doOrder(){
 async function loadVendorSummary(){
   const d=await api("vendor_summary","GET",null,{timeoutMs:8000,retries:0});
   const uid=(store.get('user')||{}).id?.toUpperCase()||'';
-  // ★ 店名をタイトルに表示（S01 → ごほうび屋）
   const shopName = d.shop_name || (store.get('user')?.name || uid);
   $("#vendor-title").textContent = `受注状況（${shopName}）`;
   $("#vendor-sub").textContent=d.sub_label||'—';
@@ -932,109 +925,6 @@ const bnra=$("#btn-news-refresh-auth"); if(bnra) bnra.onclick=()=> loadPublicOve
     }
   }else{
     show("view-login");
-  }
-})();
-</script>
-
-<!-- ====== 安定化パッチ v2（api統合／完全読込→表示／ローダー参照カウント） ====== -->
-<script>
-(function(){
-  // 設定（タイムアウトを少しゆるめて安定化）
-  window.NET = Object.assign({ BASE_TIMEOUT: 12000, MAX_RETRIES: 2, BACKOFF_MS: 800 }, window.NET||{});
-  const sleep = ms => new Promise(r=>setTimeout(r,ms));
-
-  // ローダー参照カウント
-  const LOADER = {
-    n:0,
-    on(){ this.n++; if(typeof showLoading==="function") showLoading(true); },
-    off(){ this.n=Math.max(0,this.n-1); if(typeof showLoading==="function") showLoading(this.n>0); },
-    wrap(p){ this.on(); return Promise.resolve(p).finally(()=>this.off()); }
-  };
-
-  // fetch with timeout
-  async function fetchWithTimeout(input,init,timeoutMs){
-    const ctrl=new AbortController();
-    const id=setTimeout(()=>ctrl.abort(),timeoutMs);
-    try{ return await fetch(input,{...(init||{}),signal:ctrl.signal}); }
-    finally{ clearTimeout(id); }
-  }
-
-  // apiCore（タイムアウトは引数）
-  window.apiCore = async function apiCore(fn,method="GET",body=null,tmo){
-    const token=window.store?.get?.("token")||null;
-    const u=new URL(window.ENDPOINT_URL);
-    u.searchParams.set("fn",fn);
-    let init={};
-    if(method==="GET"){
-      if(token) u.searchParams.set("token",token);
-      if(body) for(const [k,v] of Object.entries(body)) u.searchParams.set(k,typeof v==="object"?JSON.stringify(v):String(v));
-    }else{
-      const f=new URLSearchParams();
-      if(body) for(const [k,v] of Object.entries(body)) f.append(k,typeof v==="object"?JSON.stringify(v):String(v));
-      if(token) f.append("token",token);
-      init={method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:f};
-    }
-    const timeout=(typeof tmo==="number"?tmo:(window.NET?.BASE_TIMEOUT||12000));
-    const res=await fetchWithTimeout(u,init,timeout);
-    const text=await res.text();
-    if(!res.ok) throw new Error(`${res.status} ${res.statusText} - ${text.slice(0,120)}`);
-    return JSON.parse(text||"{}");
-  };
-
-  // api（指数バックオフ＋ローダー）
-  window.api = async function api(fn,method="GET",body=null,opts={}){
-    const timeoutMs=(typeof opts.timeoutMs==="number")?opts.timeoutMs:window.NET.BASE_TIMEOUT;
-    const retries=(typeof opts.retries==="number")?opts.retries:window.NET.MAX_RETRIES;
-    const withLoader=("withLoader" in opts)?!!opts.withLoader:true;
-    const run=(async()=>{
-      for(let a=0;a<=retries;a++){
-        const tmo=timeoutMs*Math.pow(3,a); // 12s→36s→108s
-        try{ return await window.apiCore(fn,method,body,tmo); }
-        catch(e){ if(a===retries) throw e; await sleep(window.NET.BACKOFF_MS*(a+1)); }
-      }
-    })();
-    return withLoader?LOADER.wrap(run):run;
-  };
-
-  // doLogin成功後：完全読込→表示 に統一
-  const origDoLogin=window.doLogin;
-  window.doLogin=async function(){
-    if(!origDoLogin){console.warn("doLogin未定義");return;}
-    try{await origDoLogin();}catch{ return; }
-    const user=window.store?.get?.("user")||null;
-    if(!user||user.role==="vendor")return;
-
-    await LOADER.wrap(Promise.all([
-      window.loadDashboard?loadDashboard():Promise.resolve(),
-      window.loadPublicOverviewAuth?loadPublicOverviewAuth():Promise.resolve()
-    ]));
-    const wm=document.querySelector("#welcome-message");
-    if(wm) wm.textContent=`ようこそ、${user.name||user.id}さん`;
-    if(typeof show==="function") show("view-shop");
-  };
-
-  // 自動ログイン時も完全読込→表示
-  document.addEventListener("DOMContentLoaded",async()=>{
-    const token=window.store?.get?.("token")||null;
-    const user=window.store?.get?.("user")||null;
-    if(!token||!user||user.role==="vendor")return;
-
-    await LOADER.wrap(Promise.all([
-      quietWrap(window.loadDashboard),
-      quietWrap(window.loadPublicOverviewAuth)
-    ]));
-    const wm=document.querySelector("#welcome-message");
-    if(wm) wm.textContent=`ようこそ、${user.name||user.id}さん`;
-    if(typeof show==="function") show("view-shop");
-  });
-
-  // 初回ロードだけ静かに（ローダーOFF）
-  async function quietWrap(fn){
-    if(typeof fn!=="function") return;
-    const origApi=window.api;
-    window.api=(f,m,b,o={})=>origApi(f,m,b,Object.assign({withLoader:false,timeoutMs:12000,retries:1},o));
-    try{ return await fn(); }
-    finally{ window.api=origApi; }
   }
 })();
 </script>
