@@ -152,7 +152,7 @@
   <section id="view-login" class="card">
     <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-    <p style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です02</p>
+    <p style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
     <div style="padding-top:10px">
       <input id="login-id" placeholder="ログインID（例：20251101）">
       <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
@@ -333,8 +333,8 @@
    基本情報
 ========================= */
 const APP_VERSION="v2.5.5";
-const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxCwiTWilGWtbcKfi9haCPKX75w4ptxlLHJbO9ibmFhkN02K1JDFcQGUecnIB0eH1tD8Q/exec"; // ← あなたのGAS /exec に差し替え
-window.ENDPOINT_URL = ENDPOINT_URL; // ★ 安定化パッチが参照するため window にエクスポート
+const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbyFY9CJ0SgOuzgdfoworTmJr1ngnum3eJ_mZozdAfYKsSiZH8jTZ18onzGwtTkM80ajkg/exec"; // ← あなたのGAS /exec に差し替え
+window.ENDPOINT_URL = ENDPOINT_URL; // ★ 安定化パッチが参照するため window に公開
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
 const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).toString().padStart(2,"0")}:${String(d.getMinutes()).toString().padStart(2,"0")}`};
@@ -553,15 +553,15 @@ async function renderNewsAuth(n){
 /* =========================
    ログイン
 ========================= */
-// 既存方針のまま（ID+4桁PW）
+// ログイン（ID+4桁PW）
 async function doLogin(){
   const id=$("#login-id").value.trim(), pass=$("#login-pass").value.trim(), err=$("#login-error");
-
   err.textContent="";
   if(!id){err.textContent="IDを入力してください";return}
   if(!/^\d{4}$/.test(pass)){err.textContent="パスワードは4桁の数字です";return}
 
   try{
+    // ★ タイムアウトを12秒・再試行1回に拡大（コールドスタート対策）
     const d=await api("login","POST",{id,password:pass},{timeoutMs:12000,retries:1});
     if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
 
@@ -576,8 +576,7 @@ async function doLogin(){
       await Promise.all([p1,p2,p3]);
       show("view-vendor");
     } else { // 生徒
-      // 先に画面を出さず、完全読込→表示 は安定化パッチ側で統一管理
-      // ここではスケルトンだけ差し込む（補助）
+      // ここではスケルトンだけ差し込む（完全読込→表示は安定化パッチ側で統一）
       $("#shop-cards").innerHTML = '<div class="item muted">店舗を読み込み中...</div>';
       $("#history-list").innerHTML = '<div class="item muted">履歴を読み込み中...</div>';
     }
@@ -878,7 +877,7 @@ const ClosedDays={
 function setDefaultVisibleUntil(){
   const el=document.getElementById('msg-visible-until'); if(!el) return;
   const d=new Date(); d.setDate(d.getDate()+14);
-  const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).toString().padStart(2,'0');
   el.value=`${yyyy}-${mm}-${dd}`;
 }
 function doLogout(){
@@ -927,7 +926,6 @@ const bnra=$("#btn-news-refresh-auth"); if(bnra) bnra.onclick=()=> loadPublicOve
       show("view-vendor");
     }else{
       $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
-      // 完全読込→表示は下の安定化パッチで再実行されるため、ここでは見せない
       await loadDashboard();
       await loadPublicOverviewAuth();
       show("view-shop");
@@ -941,7 +939,7 @@ const bnra=$("#btn-news-refresh-auth"); if(bnra) bnra.onclick=()=> loadPublicOve
 <!-- ====== 安定化パッチ v2（api統合／完全読込→表示／ローダー参照カウント） ====== -->
 <script>
 (function(){
-  // 設定
+  // 設定（タイムアウトを少しゆるめて安定化）
   window.NET = Object.assign({ BASE_TIMEOUT: 12000, MAX_RETRIES: 2, BACKOFF_MS: 800 }, window.NET||{});
   const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
@@ -976,7 +974,7 @@ const bnra=$("#btn-news-refresh-auth"); if(bnra) bnra.onclick=()=> loadPublicOve
       if(token) f.append("token",token);
       init={method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:f};
     }
-    const timeout=(typeof tmo==="number"?tmo:(window.NET?.BASE_TIMEOUT||10000));
+    const timeout=(typeof tmo==="number"?tmo:(window.NET?.BASE_TIMEOUT||12000));
     const res=await fetchWithTimeout(u,init,timeout);
     const text=await res.text();
     if(!res.ok) throw new Error(`${res.status} ${res.statusText} - ${text.slice(0,120)}`);
@@ -990,7 +988,7 @@ const bnra=$("#btn-news-refresh-auth"); if(bnra) bnra.onclick=()=> loadPublicOve
     const withLoader=("withLoader" in opts)?!!opts.withLoader:true;
     const run=(async()=>{
       for(let a=0;a<=retries;a++){
-        const tmo=timeoutMs*Math.pow(3,a); // 10s→30s→90s
+        const tmo=timeoutMs*Math.pow(3,a); // 12s→36s→108s
         try{ return await window.apiCore(fn,method,body,tmo); }
         catch(e){ if(a===retries) throw e; await sleep(window.NET.BACKOFF_MS*(a+1)); }
       }
@@ -1034,7 +1032,7 @@ const bnra=$("#btn-news-refresh-auth"); if(bnra) bnra.onclick=()=> loadPublicOve
   async function quietWrap(fn){
     if(typeof fn!=="function") return;
     const origApi=window.api;
-    window.api=(f,m,b,o={})=>origApi(f,m,b,Object.assign({withLoader:false,timeoutMs:10000,retries:1},o));
+    window.api=(f,m,b,o={})=>origApi(f,m,b,Object.assign({withLoader:false,timeoutMs:12000,retries:1},o));
     try{ return await fn(); }
     finally{ window.api=origApi; }
   }
