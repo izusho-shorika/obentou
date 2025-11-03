@@ -83,7 +83,29 @@
     .row-wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
     .row-wrap>label{display:flex;gap:6px;align-items:center}
     .row-wrap>label>input[type="date"]{width:auto}
-    @media (max-width:640px){.row-wrap>label{flex:1 1 180px}}
+
+    @media (max-width:640px){
+      .cal-grid {grid-template-columns:1fr;}
+      .vendor-kpi {grid-template-columns:1fr;}
+      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+      .table-wrap table{min-width:520px;}
+
+  /* 【修正】横スクロールと「表示期限」の飛び出しを解消 */
+  /* 1. row-wrap内のラベルを100%幅にし、確実に縦に積む */
+  .row-wrap>label{
+    flex: 1 1 100%; /* 縦積みを強制し、親要素の幅を超えないようにする */
+    min-width: 0;
+  }
+  /* 2. date入力を含むラベル内の配置を調整し、入力欄を柔軟にする */
+  .row-wrap>label:first-child{
+      flex-wrap: nowrap; /* テキストと入力欄を一行に保つ */
+      justify-content: space-between; /* テキストと入力欄を両端に寄せる */
+  }
+  .row-wrap>label:first-child input[type="date"]{
+      flex-grow: 1; /* 入力欄が残りのスペースを埋める */
+      min-width: 100px; /* 日付ピッカーとして機能する最低限の幅を確保 */
+  }
+}
 
     /* ▼ ログイン画面／ログイン後（営業情報）の共通スタイル */
     #view-login .status-grid, #view-login .status-row,
