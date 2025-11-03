@@ -62,46 +62,11 @@
     @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
     .cal-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
     .vendor-kpi {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-
-    /* 受注状況テーブルの修正 */
-    #view-vendor table {
-      table-layout: fixed; /* カラム幅を制御しやすくする */
-      width: 100%; /* 親要素の幅いっぱいにする */
-      border-collapse: collapse;
-    }
-    /* ヘッダーとデータセル共通のスタイル調整 */
-    #view-vendor th, #view-vendor td {
-      padding: 8px 6px; /* パディングを少し調整 */
-      white-space: nowrap; /* テキストが折り返さないように */
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    
-    /* 品目別集計 (.vendor-table-byitem) のアライメントと幅 */
-    .vendor-table-byitem th:nth-child(1),
-    .vendor-table-byitem td:nth-child(1) { text-align: left;  width: auto; } /* 品目名: 左揃え (可変幅) */
-    .vendor-table-byitem th:nth-child(2),
-    .vendor-table-byitem td:nth-child(2) { text-align: right; width: 60px; } /* 数量: 右揃え (2桁想定) */
-    .vendor-table-byitem th:nth-child(3),
-    .vendor-table-byitem td:nth-child(3) { text-align: center; width: 80px; } /* 金額: 中央揃え (4桁想定) */
-
-    /* 注文詳細 (.vendor-table-rows) のアライメントと幅 */
-    .vendor-table-rows th:nth-child(1),
-    .vendor-table-rows td:nth-child(1) { text-align: left; width: 80px; } /* ユーザーID: 左揃え (固定幅) */
-    .vendor-table-rows th:nth-child(2),
-    .vendor-table-rows td:nth-child(2) { text-align: left; width: auto; } /* 品目名: 左揃え (可変幅) */
-    .vendor-table-rows th:nth-child(3),
-    .vendor-table-rows td:nth-child(3) { text-align: right; width: 60px; } /* 数量: 右揃え (2桁想定) */
-    .vendor-table-rows th:nth-child(4),
-    .vendor-table-rows td:nth-child(4) { text-align: center; width: 80px; } /* 金額: 中央揃え (4桁想定) */
-
     @media (max-width:640px){
       .cal-grid {grid-template-columns:1fr;}
       .vendor-kpi {grid-template-columns:1fr;}
-      /* ▼ レスポンシブ修正: 横スクロールを強制しない */
-      .table-wrap{overflow-x:hidden;}
-      .table-wrap table{min-width:unset!important;}
-      /* ▲ レスポンシブ修正終わり */
+      .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+      .table-wrap table{min-width:520px;}
     }
 
     /* 履歴カードの枠色（カード型のまま） */
@@ -193,7 +158,7 @@
   <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です00</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
@@ -295,8 +260,8 @@
     <div class="card">
       <h3 style="margin:0">品目別集計</h3>
       <div class="table-wrap">
-        <table class="vendor-table-byitem" style="width:100%;border-collapse:collapse;margin-top:8px">
-          <thead><tr><th>品目</th><th>数量</th><th>金額</th></tr></thead>
+        <table style="width:100%;border-collapse:collapse;margin-top:8px">
+          <thead><tr><th>品目</th><th style="width:90px">数量</th><th style="width:120px">金額</th></tr></thead>
           <tbody id="vendor-byitem"></tbody>
         </table>
       </div>
@@ -306,8 +271,8 @@
     <div class="card">
       <h3 style="margin:0">注文詳細</h3>
       <div class="table-wrap">
-        <table class="vendor-table-rows" style="width:100%;border-collapse:collapse;margin-top:8px">
-          <thead><tr><th>ユーザーID</th><th>品目</th><th>数量</th><th>金額</th></tr></thead>
+        <table style="width:100%;border-collapse:collapse;margin-top:8px">
+          <thead><tr><th style="width:120px">ユーザーID</th><th>品目</th><th style="width:70px">数量</th><th style="width:120px">金額</th></tr></thead>
           <tbody id="vendor-rows"></tbody>
         </table>
       </div>
@@ -375,7 +340,7 @@ const store={ set(k,v){localStorage.setItem(k,JSON.stringify(v))}, get(k,d=null)
 const cache={
   get(key, ttlSec){ const raw=localStorage.getItem(`cache:${key}`); if(!raw) return null; try{ const {t,v}=JSON.parse(raw); if(Date.now()-t>ttlSec*1000) return null; return v; }catch{ return null; } },
   set(key, value){ localStorage.setItem(`cache:${key}`, JSON.stringify({t: Date.now(), v:value})) },
-  del(key){ localStorage.removeItem(key) }
+  del(key){ localStorage.removeItem(`cache:${key}`) }
 };
 
 /* =========================
@@ -416,8 +381,6 @@ async function apiCore(fn,method="GET",body=null){
   if(!r.ok){ throw new Error(`${r.status} ${r.statusText} - ${text.slice(0,120)}`); }
   return JSON.parse(text);
 }
-// ★ api関数の定義は、安定化パッチ内のものに置き換えるため、ここでは元の定義を削除
-/*
 async function api(fn,method="GET",body=null,{timeoutMs=10000,retries=1,withLoader=true}={}){
   if(withLoader) showLoading(true);
   try{
@@ -433,7 +396,6 @@ async function api(fn,method="GET",body=null,{timeoutMs=10000,retries=1,withLoad
     }
   } finally { if(withLoader) showLoading(false); }
 }
-*/
 
 /* =========================
    画面切り替え
@@ -507,8 +469,7 @@ async function renderNews(n){
     `;
     const bodyEl=row.querySelector('.notice-body');
     try{
-      // ★ api()呼び出しから短いタイムアウト指定を削除
-      const res=await api('messages','GET',{shop_id:item.shop_id},{withLoader:false});
+      const res=await api('messages','GET',{shop_id:item.shop_id},{withLoader:false,timeoutMs:5000,retries:0});
       const first=(res.ok && res.list && res.list[0])?res.list[0]:null;
       bodyEl.innerHTML=first ? Text.autoLinkAndBreaks(first.body||'') : '（本文はありません）';
     }catch(e){ bodyEl.innerHTML='（本文の取得に失敗しました）'; }
@@ -534,9 +495,8 @@ async function loadPublicOverviewAuth(force=false){
   const cNews=cache.get('latest_news',300);       if(cNews)     renderNewsAuth(cNews);
 
   // 最新取得
-  // ★ api()呼び出しから短いタイムアウト指定を削除
-  try{ const d=await api('public_overview','GET',null,{withLoader:false}); cache.set('public_overview',d); renderOverviewAuth(d);}catch(e){}
-  try{ const n=await api('latest_messages_all','GET',null,{withLoader:false}); cache.set('latest_news',n); renderNewsAuth(n);}catch(e){}
+  try{ const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('public_overview',d); renderOverviewAuth(d);}catch(e){}
+  try{ const n=await api('latest_messages_all','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('latest_news',n); renderNewsAuth(n);}catch(e){}
 }
 function renderOverviewAuth(d){
   const rows=document.getElementById("status-rows-auth");
@@ -610,8 +570,7 @@ async function renderNewsAuth(n){
       bodyEl.innerHTML = Text.autoLinkAndBreaks(item.body);
     }else{
       try{
-        // ★ api()呼び出しから短いタイムアウト指定を削除
-        const res = await api('messages','GET',{shop_id:item.shop_id},{withLoader:false});
+        const res = await api('messages','GET',{shop_id:item.shop_id},{withLoader:false,timeoutMs:5000,retries:0});
         const first = (res.ok && res.list && res.list[0]) ? res.list[0] : null;
         bodyEl.innerHTML = first ? Text.autoLinkAndBreaks(first.body||'') : '（本文はありません）';
       }catch(e){
@@ -634,8 +593,8 @@ async function doLogin(){
   if(!/^\d{4}$/.test(pass)){err.textContent="パスワードは4桁の数字です";return}
 
   try{
-    // ★ 修正: 短いタイムアウト指定 (timeoutMs:20000, retries:0) を削除し、より頑健なデフォルト設定を使用
-    const d=await api("login","POST",{id,password:pass});
+    // タイムアウト短縮・リトライなしでキビキビ
+    const d=await api("login","POST",{id,password:pass},{timeoutMs:20000,retries:0});
     if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
 
     store.set("token",d.token); store.set("user",d.user);
@@ -672,8 +631,7 @@ async function doLogin(){
 ========================= */
 // ▼ 差し替え：履歴2件・コンパクト描画
 async function loadDashboard(){
-  // ★ api()呼び出しから短いタイムアウト指定を削除
-  const d=await api("dashboard","GET");
+  const d=await api("dashboard","GET",null,{timeoutMs:15000,retries:0});
   state.shops=d.shops||[];
 
   // 店リスト（カード）
@@ -721,8 +679,7 @@ async function loadDashboard(){
       btn.onclick=async()=>{
         if(!confirm('この注文を取り消します。よろしいですか？')) return;
         try{
-          // ★ api()呼び出しから短いタイムアウト指定を削除
-          const res=await api('cancel_order','POST',{order_id:h.order_id});
+          const res=await api('cancel_order','POST',{order_id:h.order_id},{timeoutMs:10000,retries:0});
           if(res.ok){ card.remove(); } else { alert(res.error||'取消に失敗しました'); }
         }catch(e){ alert('通信エラー：'+e.message); }
       };
@@ -750,10 +707,9 @@ async function enterMenu(){
 
   showLoading(true);
   try{
-    // ★ api()呼び出しから短いタイムアウト指定を削除
     const [msgRes, menuRes] = await Promise.all([
-      api('messages','GET',{shop_id:sid},{withLoader:false}),
-      api('menu','GET',{shop_id:sid},{withLoader:false})
+      api('messages','GET',{shop_id:sid},{withLoader:false,timeoutMs:15000,retries:0}),
+      api('menu','GET',{shop_id:sid},{withLoader:false,timeoutMs:15000,retries:0})
     ]);
 
     const list = msgRes.ok ? (msgRes.list||[]) : [];
@@ -831,8 +787,7 @@ async function doOrder(){
   if(!state.cart.length){alert("商品を追加してください");return}
   const payload={shop_id:state.chosenShop.shop_id,items:state.cart};
   try{
-    // ★ api()呼び出しから短いタイムアウト指定を削除
-    const res=await api("order","POST",payload);
+    const res=await api("order","POST",payload,{timeoutMs:8000,retries:0});
     if(res.ok){
       const counts=res.items.reduce((a,x)=>(a[x.item]=(a[x.item]||0)+1,a),{});
       const lines=Object.entries(counts).map(([name,c])=>`・${name} × ${c}点`).join("<br>");
@@ -846,8 +801,7 @@ async function doOrder(){
    店：サマリ
 ========================= */
 async function loadVendorSummary(){
-  // ★ 修正: 短いタイムアウト指定 (timeoutMs:8000, retries:0) を削除
-  const d=await api("vendor_summary","GET");
+  const d=await api("vendor_summary","GET",null,{timeoutMs:8000,retries:0});
   const uid=(store.get('user')||{}).id?.toUpperCase()||'';
   // ★ 店名をタイトルに表示（S01 → ごほうび屋）
   const shopName = d.shop_name || (store.get('user')?.name || uid);
@@ -885,8 +839,7 @@ const VendorMessages={
   list:[],
   async load(){
     const uid=(store.get('user')||{}).id?.toUpperCase()||''; if(!uid) return;
-    // ★ 修正: 短いタイムアウト指定 (timeoutMs:7000, retries:0) を削除
-    const res=await api('messages','GET',{shop_id:uid});
+    const res=await api('messages','GET',{shop_id:uid},{timeoutMs:7000,retries:0});
     this.list=res.ok?(res.list||[]):[];
     this.render(); $('#msg-status').textContent='';
   },
@@ -918,8 +871,7 @@ const VendorMessages={
     const vu=$('#msg-visible-until').value;
     const enabled=$('#msg-enabled').checked;
     if(!title||!body){ $('#msg-status').textContent='タイトルと内容は必須です。'; return; }
-    // ★ api()呼び出しから短いタイムアウト指定を削除
-    const res=await api('save_message','POST',{title,body,visible_until:vu||'',enabled});
+    const res=await api('save_message','POST',{title,body,visible_until:vu||'',enabled},{timeoutMs:10000,retries:0});
     if(res.ok){
       $('#msg-status').textContent='保存しました。生徒画面は再読込で即反映されます。';
       $('#msg-title').value=''; $('#msg-body').value=''; setDefaultVisibleUntil(); $('#msg-enabled').checked=true;
@@ -933,11 +885,7 @@ const VendorMessages={
 ========================= */
 const ClosedDays={
   selected:new Set(), monthKeys:[],
-  async load(){ 
-    // ★ 修正: 短いタイムアウト指定 (timeoutMs:7000, retries:0) を削除
-    const d=await api('closed_days','GET'); 
-    this.selected=new Set(d.days||[]); this.render(); $('#closed-msg').textContent=''; 
-  },
+  async load(){ const d=await api('closed_days','GET',null,{timeoutMs:7000,retries:0}); this.selected=new Set(d.days||[]); this.render(); $('#closed-msg').textContent=''; },
   initMonths(){ const now=new Date(); const ym=(dt)=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`; const cur=new Date(now.getFullYear(),now.getMonth(),1); const nxt=new Date(now.getFullYear(),now.getMonth()+1,1); this.monthKeys=[ym(cur),ym(nxt)]; },
   daysInMonth(y,m){ return new Date(y,m,0).getDate(); },
   makeCell(dateStr){
@@ -966,12 +914,7 @@ const ClosedDays={
       box.appendChild(title); box.appendChild(grid); wrap.appendChild(box);
     });
   },
-  async save(){ 
-    const body={dates:Array.from(this.selected).sort()}; 
-    // ★ api()呼び出しから短いタイムアウト指定を削除
-    const res=await api('save_closed_days','POST',body); 
-    $('#closed-msg').textContent = res.ok ? '保存しました（当月＋翌月を上書き）。' : (res.error||'保存に失敗しました'); 
-  }
+  async save(){ const body={dates:Array.from(this.selected).sort()}; const res=await api('save_closed_days','POST',body,{timeoutMs:8000,retries:0}); $('#closed-msg').textContent = res.ok ? '保存しました（当月＋翌月を上書き）。' : (res.error||'保存に失敗しました'); }
 };
 
 /* =========================
@@ -1008,42 +951,17 @@ $("#btn-msg-refresh").onclick=()=> VendorMessages.load();
 $("#btn-msg-save").onclick=()=> VendorMessages.save();
 
 // 未ログインの公開情報 更新ボタン
-// ★ api()呼び出しから短いタイムアウト指定を削除
 $("#btn-public-refresh").onclick=()=> loadPublicOverview(true);
 $("#btn-news-refresh").onclick=()=> loadPublicOverview(true);
 
 // ログイン後の公開情報 更新ボタン
-// ★ api()呼び出しから短いタイムアウト指定を削除
 $("#btn-public-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
 $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
 
-/* =========================
-   初期化
-========================= */
-(async()=>{
-  loadPublicOverview(); // 未ログインでも表示
-  const token=store.get("token"); const user=store.get("user");
-  if(token&&user){
-    state.me=user;
-    if(/^s\d+$/i.test(user.id)){
-      await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]);
-      setDefaultVisibleUntil();
-      show("view-vendor");
-    }else{
-      $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
-      await loadDashboard();
-      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報＆新着（最新1件）
-      show("view-shop");
-    }
-  }else{
-    show("view-login");
-  }
-})();
-
 /* ====== 安定化パッチ（apiを引数渡し方式に修正） ====== */
 (function(){
-  // ★ 修正: BASE_TIMEOUT を 20000ms から 30000ms に延長
-  window.NET = window.NET || { BASE_TIMEOUT: 30000, MAX_RETRIES: 2, BACKOFF_MS: 1200 };
+  // 既存NETがなければ定義
+  window.NET = window.NET || { BASE_TIMEOUT: 20000, MAX_RETRIES: 2, BACKOFF_MS: 1200 };
 
   function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
@@ -1075,7 +993,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
       init = { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"}, body:f };
     }
 
-    const timeout = (typeof tmo === "number" ? tmo : (window.NET?.BASE_TIMEOUT || 30000));
+    const timeout = (typeof tmo === "number" ? tmo : (window.NET?.BASE_TIMEOUT || 20000));
     const res = await fetchWithTimeout(u, init, timeout);
     const text = await res.text();
     if(!res.ok){ throw new Error(`${res.status} ${res.statusText} - ${text.slice(0,120)}`); }
@@ -1091,7 +1009,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     if(typeof window.showLoading==="function" && withLoader) showLoading(true);
     try{
       for(let attempt=0; attempt<=retries; attempt++){
-        const tmo = timeoutMs * Math.pow(3, attempt); // 30s→90s→270s
+        const tmo = timeoutMs * Math.pow(3, attempt); // 10s→30s→90s
         try{
           return await window.apiCore(fn, method, body, tmo);
         }catch(e){
@@ -1110,10 +1028,9 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     if(!origDoLogin){ console.warn("doLogin未定義"); return; }
     try{ await origDoLogin(); }catch(e){ /* 既存が処理 */ }
     const user = window.store && typeof store.get==="function" ? store.get("user") : null;
-    if(user && !/^s\d+$/i.test(user.id)){ // ベンダー以外（生徒）
+    if(user && user.role!=="vendor"){
       try{
         if(typeof showLoading==="function") showLoading(true);
-        // ダッシュボードと公開情報がまだ読み込まれていない場合は読み込む
         await Promise.all([
           window.loadDashboard ? loadDashboard() : Promise.resolve(),
           window.loadPublicOverviewAuth ? loadPublicOverviewAuth() : Promise.resolve()
@@ -1132,7 +1049,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     const token = window.store && typeof store.get==="function" ? store.get("token") : null;
     const user  = window.store && typeof store.get==="function" ? store.get("user")  : null;
     if(!token || !user) return;
-    if(/^s\d+$/i.test(user.id)) return; // ベンダーは既存処理に任せる
+    if(user.role === "vendor") return;
     try{
       if(typeof showLoading==="function") showLoading(true);
       await Promise.all([
@@ -1146,6 +1063,29 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
       if(typeof showLoading==="function") showLoading(false);
     }
   });
+})();
+
+/* =========================
+   初期化
+========================= */
+(async()=>{
+  loadPublicOverview(); // 未ログインでも表示
+  const token=store.get("token"); const user=store.get("user");
+  if(token&&user){
+    state.me=user;
+    if(/^s\d+$/i.test(user.id)){
+      await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]);
+      setDefaultVisibleUntil();
+      show("view-vendor");
+    }else{
+      $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
+      await loadDashboard();
+      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報＆新着（最新1件）
+      show("view-shop");
+    }
+  }else{
+    show("view-login");
+  }
 })();
 </script>
 
