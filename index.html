@@ -322,6 +322,66 @@
     line-height: 1.25;
   }
 }
+    /* ===== 注文詳細（#vendor-rows）を品目最優先に。集計表とは切り離して調整 ===== */
+
+/* まず、過去に設定した「品目=40%」等の幅指定を無効化（注文詳細のみ） */
+#view-vendor #vendor-rows th:nth-child(2),
+#view-vendor #vendor-rows td:nth-child(2){
+  width: auto !important;   /* ← 品目列は固定比率にしない */
+}
+
+/* PC/タブレットでも品目を圧迫しない（自動レイアウトに） */
+#view-vendor #vendor-rows{
+  table-layout: auto;       /* ← 集計表(#vendor-byitem)とは別レイアウト方針 */
+}
+
+/* 見出し「品目」が縦に崩れないように */
+#view-vendor #vendor-rows thead th:nth-child(2){
+  white-space: nowrap;
+}
+
+/* ユーザーID / 数量 / 金額は “必要最小限の固定幅” を確保し、残りを品目に渡す */
+#view-vendor #vendor-rows th:nth-child(1),
+#view-vendor #vendor-rows td:nth-child(1){
+  width: 8ch !important;         /* 例: 8文字相当。IDの長さに応じて微調整可 */
+  white-space: nowrap;
+  text-align: left;
+}
+#view-vendor #vendor-rows th:nth-child(3),
+#view-vendor #vendor-rows td:nth-child(3){
+  width: 3.4ch !important;       /* 2桁＋余裕。最小限 */
+  text-align: center;             /* 見出し=右寄せを望む場合は th だけ右へ変更可 */
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+#view-vendor #vendor-rows th:nth-child(4),
+#view-vendor #vendor-rows td:nth-child(4){
+  width: 7ch !important;         /* ¥9,999 程度まで想定（4桁＋記号/カンマ） */
+  text-align: right;              /* 見出しは中央寄せにしたい場合は th を center に */
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 品目セルは残りをすべて受け取り、スマホでも読めるよう折り返しOK */
+#view-vendor #vendor-rows td:nth-child(2){
+  white-space: normal;            /* 折り返し許可（長名でも読める） */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+}
+
+/* スマホ最適化：少しだけ文字と余白を詰めて横スクロール不要に */
+@media (max-width:640px){
+  #view-vendor #vendor-rows{
+    font-size: 0.9em;
+  }
+  #view-vendor #vendor-rows th,
+  #view-vendor #vendor-rows td{
+    padding: 6px 8px;
+    line-height: 1.25;
+  }
+}
+
 
 
   </style>
@@ -334,7 +394,7 @@
  <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です00</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
