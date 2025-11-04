@@ -206,6 +206,60 @@
 </style>
 </head>
 <body>
+<section id="view-shop" class="hidden">
+    <h3 id="welcome-message" style="margin-top:0;font-weight:normal"></h3>
+
+    <div class="card">
+      <h3 style="margin-top:0">お店を選ぶ</h3>
+      <div id="shop-cards" class="list"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">最近の注文（最新2件）</h3>
+      <div id="history-list" class="list"></div>
+    </div>
+
+    <div id="public-status-card-auth" class="card">
+      <div class="row-between">
+        <h3 style="margin:0">営業情報</h3>
+        <button id="btn-public-refresh-auth" class="ghost" style="width:auto">更新</button>
+      </div>
+      <p class="muted" style="margin:6px 0 10px 0">当日から3日分の注文可否（◯=注文可能 / ×=注文不可）。</p>
+      <div id="status-header-auth" class="status-grid muted" style="font-weight:700">
+        <div class="col-hide-sm"></div>
+        <div><span class="pill-day" id="day0-label-auth">—</span></div>
+        <div><span class="pill-day" id="day1-label-auth">—</span></div>
+        <div><span class="pill-day" id="day2-label-auth">—</span></div>
+      </div>
+      <div id="status-rows-auth" class="list" style="margin-top:10px"></div>
+      <p id="status-empty-auth" class="muted" style="margin:8px 0 0 0;display:none">現在、表示できる店舗がありません。</p>
+    </div>
+
+    <div id="public-news-card-auth" class="card">
+      <div class="row-between">
+        <h3 style="margin:0">新着情報</h3>
+        <button id="btn-news-refresh-auth" class="ghost" style="width:auto">更新</button>
+      </div>
+      <div id="news-list-auth" class="list" style="margin-top:10px"></div>
+      <p id="news-empty-auth" class="muted" style="margin:8px 0 0 0;display:none">各お店からのお知らせはまだありません。</p>
+    </div>
+
+    <div class="footer-actions row"><button class="ghost" id="btn-logout">ログアウト</button></div>
+  </section>
+
+<section id="view-login" class="card">
+ <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
+       style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です。</p>
+  <div style="padding-top:10px">
+    <input id="login-id" placeholder="ログインID（例：00-0000）">
+    <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
+  </div>
+  <div class="spacer"></div>
+  <button id="btn-login">ログイン</button>
+  <p id="login-error" class="muted center"></p>
+</section>
+
 <header><h1 class="visually-hidden">高校生を応援📣お弁当注文アプリ<span id="app-version" class="tag"></span></h1></header>
 
 <main>
@@ -1068,9 +1122,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
         if(typeof showLoading==="function") showLoading(true);
         // ダッシュボードと公開情報がまだ読み込まれていない場合は読み込む
         await Promise.all([
-          window.loadDashboard ? loadDashboard() : Promise.resolve(),
-          window.loadPublicOverviewAuth ? : Promise.resolve()
-        ]);
+          window.loadDashboard ? loadDashboard() : Promise.resolve()]);
         const wm = document.querySelector("#welcome-message");
         if(wm) wm.textContent = `ようこそ、${user.name||user.id}さん`;
         if(typeof show==="function") show("view-shop");
@@ -1089,9 +1141,7 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     try{
       if(typeof showLoading==="function") showLoading(true);
       await Promise.all([
-        window.loadDashboard ? loadDashboard() : Promise.resolve(),
-        window.loadPublicOverviewAuth ? : Promise.resolve()
-      ]);
+        window.loadDashboard ? loadDashboard() : Promise.resolve()]);
       const wm = document.querySelector("#welcome-message");
       if(wm) wm.textContent = `ようこそ、${user.name||user.id}さん`;
       if(typeof show==="function") show("view-shop");
