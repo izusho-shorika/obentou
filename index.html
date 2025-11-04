@@ -212,7 +212,7 @@ button.ghost:hover{background:#e2e8f0}
   <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です。</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：20251101）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
@@ -484,6 +484,7 @@ button.ghost:hover{background:#e2e8f0}
         throw new Error('GAS_ENDPOINT is not configured.');
     }
 
+    // ローディング表示をAPIコール時に開始
     if (withLoader) showLoading(true);
 
     const fullPayload = { ...payload, fn: fn };
@@ -503,7 +504,6 @@ button.ghost:hover{background:#e2e8f0}
           const params = new URLSearchParams(fullPayload);
           url = `${baseUrl}?${params.toString()}`;
         } else {
-          // POSTリクエストでは、fnはURLクエリ、その他はJSONボディで送る
           const postParams = new URLSearchParams({ fn: fn });
           url = `${baseUrl}?${postParams.toString()}`;
           fetchOptions.body = JSON.stringify(payload);
@@ -523,12 +523,12 @@ button.ghost:hover{background:#e2e8f0}
 
         if (data.ok === false) {
           if (data.error === 'unauthorized') {
-            // 認証エラーは特別処理
             logout(false);
           }
           throw new Error(`API Error: ${data.error || '不明なエラー'}`);
         }
 
+        // 成功したらローディングを閉じる
         if (withLoader) showLoading(false);
         return data;
 
@@ -541,11 +541,10 @@ button.ghost:hover{background:#e2e8f0}
           }
         } else if (attempt === retries) {
           console.error(`API Call Failed: ${fn}`, e);
-          if (e.message.includes('unauthorized')) throw e; // unauthorizedは特別処理
+          if (e.message.includes('unauthorized')) throw e;
           show_alert(`データの取得に失敗しました: ${e.message}`);
           throw e;
         }
-        // リトライのために待機 (例: 1秒)
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
@@ -553,7 +552,7 @@ button.ghost:hover{background:#e2e8f0}
 
 
   // =========================================================
-  // ログイン処理
+  // ログイン処理（修正版）
   // =========================================================
 
   const login = async () => {
@@ -568,47 +567,45 @@ button.ghost:hover{background:#e2e8f0}
     try {
       const data = await api('login', 'POST', { id, password }, { withLoader: true });
 
-      if (data.user.id.toLowerCase().startsWith('s')) {
-        // ベンダー
-        store.set('token', data.token);
-        store.set('user', { ...data.user, role: 'vendor' });
-        show('view-vendor');
-        await loadVendorData(data.user.id);
-      } else {
-        // 一般ユーザー
-        store.set('token', data.token);
-        store.set('user', { ...data.user, role: 'user' });
-        
-        // ログイン後の処理を関数化
-        await postLoginSetup(data.token, data.user);
-      }
+      // ログイン成功後の処理
+      store.set('token', data.token);
+      
+      const role = data.user.id.toLowerCase().startsWith('s') ? 'vendor' : 'user';
+      store.set('user', { ...data.user, role: role });
       
       document.getElementById('login-id').value = '';
       document.getElementById('login-password').value = '';
 
+      if (role === 'vendor') {
+        show('view-vendor');
+        await loadVendorData(data.user.id);
+      } else {
+        await postLoginSetup(data.token, data.user);
+      }
+
     } catch (e) {
-      // エラーはapi関数内でアラート表示済み
       console.error(e);
+      showLoading(false); // 失敗時はローディングを閉じる
     }
   };
 
   const logout = (confirm = true) => {
     if (confirm && !window.confirm('ログアウトしますか？')) return;
     store.clear();
-    show('view-login');
-    window.location.reload(); // 画面全体をリロードして初期状態に戻す
+    // 確実にログイン画面に戻るよう、リロード前にstoreをクリア
+    window.location.reload(); 
   };
+
 
   // =========================================================
   // ユーザービュー（ログイン後）
   // =========================================================
 
-  // --- 営業情報（ログイン後）の表示関数 (★修正済み) ---
+  // --- 営業情報（ログイン後）の表示関数 (◯×表示修正済) ---
   function renderOverviewAuth(d){
     const rows = document.getElementById("status-rows-auth");
     const emptyMessage = document.getElementById("status-empty-auth");
     
-    // 要素がない場合は処理を中断 (安全性のため)
     if(!rows || !emptyMessage) {
         console.error("HTML要素 #status-rows-auth または #status-empty-auth が見つかりません。");
         return;
@@ -642,7 +639,7 @@ button.ghost:hover{background:#e2e8f0}
     rows.innerHTML = html;
   }
 
-  // --- 営業情報（ログイン後）の読み込み関数 (★修正済み) ---
+  // --- 営業情報（ログイン後）の読み込み関数 (◯×表示修正済) ---
   async function loadPublicOverviewAuth(force=false){
     // ラベル (日付ヘッダー) の設定
     const today = new Date();
@@ -658,19 +655,16 @@ button.ghost:hover{background:#e2e8f0}
     // 1. キャッシュがあれば即時描画
     if(cOverview) renderOverviewAuth(cOverview);
 
-    let latestOverviewData = cOverview; // 最新のデータ（キャッシュまたはAPI結果）
+    let latestOverviewData = cOverview;
 
     // 2. 最新データの取得
     try{ 
-        // タイムアウトを15秒に延長し、リトライを増やして通信を強化
         const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:15000,retries:2}); 
         
-        // GASからのレスポンスが 'ok:false' の場合もキャッチ
         if(d && d.ok === true){
             cache.set(cacheKeyOverview,d); 
             latestOverviewData = d;
         } else {
-            // GASからエラー応答があった場合 (d.ok !== true)
             console.error("APIエラー: public_overviewがエラーを返しました", d);
             // キャッシュがなければ空表示を保証
             if (!cOverview) renderOverviewAuth(null);
@@ -686,7 +680,6 @@ button.ghost:hover{background:#e2e8f0}
     // 3. 最新のデータがあれば、表示を更新
     if(latestOverviewData) renderOverviewAuth(latestOverviewData);
     
-    // 新着情報も同時にロード
     loadLatestNewsAuth(force);
   }
   
@@ -698,7 +691,6 @@ button.ghost:hover{background:#e2e8f0}
       if (cNews) renderNewsAuth(cNews);
 
       try {
-          // latest_messages_all を呼び出す (全ショップの最新情報を取得するAPI)
           const n = await api('latest_messages_all', 'GET', null, { withLoader: false, timeoutMs: 15000, retries: 2 });
           
           if (n && n.ok === true) {
@@ -732,7 +724,7 @@ button.ghost:hover{background:#e2e8f0}
                       <div class="news-title">${n.title}</div>
                       <div class="news-date">${format_date(n.updated_at)}</div>
                   </div>
-                  </div>
+              </div>
           </div>
       `).join('');
       container.innerHTML = html;
@@ -810,7 +802,7 @@ button.ghost:hover{background:#e2e8f0}
     try {
       await api('cancel_order', 'POST', { token, order_id: orderId });
       show_alert('注文をキャンセルしました。');
-      // ダッシュボードを更新
+      
       cache.set('dashboard', null);
       await loadDashboard(true);
     } catch (e) {
@@ -821,7 +813,7 @@ button.ghost:hover{background:#e2e8f0}
   // --- メニュー表示 ---
   const loadMenu = async () => {
     const cacheKey = 'menu';
-    const cData = cache.get(cacheKey, 3600); // 1時間キャッシュ
+    const cData = cache.get(cacheKey, 3600);
 
     if (cData) renderMenu(cData);
 
@@ -875,7 +867,6 @@ button.ghost:hover{background:#e2e8f0}
       return;
     }
     
-    // 注文可能な時間か確認（GAS側でもチェックされるが二重で）
     const orderStatusText = document.getElementById('order-status')?.textContent;
     if (orderStatusText && orderStatusText.includes('時間外')) {
         show_alert('現在は注文時間外です。前日16:00〜当日8:40にご注文ください。');
@@ -890,7 +881,6 @@ button.ghost:hover{background:#e2e8f0}
       await api('order', 'POST', { token, shop_id, items: [{ item_id, item: item_name }] });
       show_alert(`${item_name}の注文が完了しました。`);
       
-      // 注文完了後、キャッシュをクリアしてダッシュボードを更新
       cache.set('dashboard', null);
       await loadDashboard(true);
       
@@ -913,7 +903,7 @@ button.ghost:hover{background:#e2e8f0}
       await Promise.all([
         loadDashboard(),
         loadPublicOverviewAuth(),
-        loadMenu() // メニューも読み込む
+        loadMenu()
       ]);
     } catch (e) {
       console.error('Post login setup failed:', e);
@@ -932,7 +922,7 @@ button.ghost:hover{background:#e2e8f0}
     document.getElementById('vendor-sub-label').textContent = '';
     document.getElementById('vendor-date-input').value = new Date().toISOString().split('T')[0];
     
-    document.getElementById('vendor-view-title').textContent = ''; // 初期化
+    document.getElementById('vendor-view-title').textContent = '';
 
     try {
         await Promise.all([
@@ -954,7 +944,6 @@ button.ghost:hover{background:#e2e8f0}
     try {
       const data = await api('vendor_summary', 'GET', params, { withLoader: true });
       renderVendorSummary(data, target_date);
-      // ショップ名をタイトルに設定
       document.getElementById('vendor-view-title').textContent = data.shop_name ? `${data.shop_name} - 注文管理` : '注文管理';
     } catch (e) {
       console.error('Vendor summary failed', e);
@@ -962,16 +951,13 @@ button.ghost:hover{background:#e2e8f0}
   };
 
   const renderVendorSummary = (data, target_date) => {
-    // 期間ラベル
     document.getElementById('vendor-title-label').textContent = data.title_label || '集計';
     document.getElementById('vendor-sub-label').textContent = data.sub_label || '';
     if (target_date) document.getElementById('vendor-date-input').value = target_date;
     
-    // KPI
     document.getElementById('vendor-total-qty').textContent = `${data.total_qty || 0}個`;
     document.getElementById('vendor-total-amount').textContent = format_currency(data.total_amount || 0);
 
-    // 品目別集計
     const byItemBody = document.getElementById('vendor-by-item-body');
     if(byItemBody) {
         if (!data.by_item || data.by_item.length === 0) {
@@ -987,7 +973,6 @@ button.ghost:hover{background:#e2e8f0}
         }
     }
 
-    // 注文詳細
     const detailBody = document.getElementById('vendor-detail-body');
     if(detailBody) {
         if (!data.rows || data.rows.length === 0) {
@@ -1049,12 +1034,8 @@ button.ghost:hover{background:#e2e8f0}
     try {
       const data = await api('closed_days', 'GET', { token }, { withLoader: false });
       const currentDays = data.days || [];
-      // HTMLに埋め込む
       const hiddenInput = document.getElementById('vendor-closed-days-data');
       if (hiddenInput) hiddenInput.value = JSON.stringify(currentDays);
-      
-      // チェックボックスの描画（省略、今回はロードのみ）
-
     } catch (e) {
       console.error('Closed days load failed', e);
     }
@@ -1063,8 +1044,6 @@ button.ghost:hover{background:#e2e8f0}
   // --- 休業日設定の保存 ---
   window.saveClosedDays = async () => {
     const token = store.get('token');
-    // ... フォームから日付を収集するロジックを実装 ...
-    // 現在はサンプルとして空配列で保存
     const datesToSave = []; 
 
     if (!confirm('休業日の設定を保存しますか？')) return;
@@ -1119,7 +1098,7 @@ button.ghost:hover{background:#e2e8f0}
     });
 
     const cacheKey = 'public_overview';
-    const cData = cache.get(cacheKey, 300); // 5分キャッシュ
+    const cData = cache.get(cacheKey, 300);
 
     if (cData) renderOverview(cData);
 
@@ -1131,13 +1110,11 @@ button.ghost:hover{background:#e2e8f0}
         latestData = data;
     } catch (e) {
         console.error('Failed to load public overview', e);
-        // 通信失敗時、かつキャッシュもなかった場合、空表示を呼び出す
         if (!cData) renderOverview(null);
     }
     
     if (latestData) renderOverview(latestData);
     
-    // 新着情報もロード
     loadLatestNews(force);
   }
 
@@ -1184,33 +1161,40 @@ button.ghost:hover{background:#e2e8f0}
   }
 
   // =========================================================
-  // 初期ロードとイベントリスナー
+  // 初期ロードとイベントリスナー（修正版）
   // =========================================================
 
   document.addEventListener("DOMContentLoaded", async () => {
-    // バージョン番号表示 (省略)
+    // バージョン番号表示
     const versionEl = document.getElementById('app-version');
     if (versionEl) versionEl.textContent = 'v2.3.1'; 
     
-    const token = store.get("token");
-    const user = store.get("user");
+    // storeオブジェクトの存在をチェックしてからアクセスすることでクラッシュを防ぐ
+    const token = window.store ? store.get("token") : null;
+    const user = window.store ? store.get("user") : null;
 
     // ログイン済みの場合の処理
     if (token && user) {
-      if (user.role === "vendor") {
-        show('view-vendor');
-        await loadVendorData(user.id);
-      } else {
-        await postLoginSetup(token, user);
-      }
+        // ログイン済みであれば、最初にローディングを表示し、ユーザーを安心させる
+        showLoading(true);
+
+        if (user.role === "vendor") {
+            show('view-vendor');
+            await loadVendorData(user.id);
+        } else {
+            // postLoginSetup内で show('view-shop') される
+            await postLoginSetup(token, user); 
+        }
+        showLoading(false); // 処理完了後に閉じる
+
     } else {
-      // 未ログインの場合の処理
-      show('view-login');
-      await loadPublicOverview();
-      
-      // ログインボタンのイベントリスナー設定
-      const loginBtn = document.getElementById('login-btn');
-      if (loginBtn) loginBtn.onclick = login;
+        // 未ログインの場合の処理
+        show('view-login');
+        await loadPublicOverview();
+        
+        // ログインボタンのイベントリスナー設定
+        const loginBtn = document.getElementById('login-btn');
+        if (loginBtn) loginBtn.onclick = login;
     }
   });
 
@@ -1218,8 +1202,6 @@ button.ghost:hover{background:#e2e8f0}
   window.login = login;
   window.logout = logout;
   window.loadPublicOverviewAuth = loadPublicOverviewAuth;
-  // ログアウトとリロード時にキャッシュをクリア（開発時）
-  // window.addEventListener('beforeunload', () => store.clear());
 </script>
 
 </body>
