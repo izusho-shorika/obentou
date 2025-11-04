@@ -212,7 +212,7 @@
   <section id="view-login" class="card">
  <img src="logo.png" alt="高校生を食で応援 お弁当注文アプリ"
        style="display:block;max-width:90%;height:auto;margin:0 auto 16px;">
-  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です。</p>
+  <p class="center style="margin-top:0">お弁当の注文は前日16:00〜当日8:40です</p>
   <div style="padding-top:10px">
     <input id="login-id" placeholder="ログインID（例：00-0000）">
     <input id="login-pass" type="password" inputmode="numeric" placeholder="4桁パスワード（半角数字）" maxlength="4">
@@ -293,7 +293,17 @@
   </section>
 
   <section id="view-done" class="hidden card center">
-    <h2>🎉 注文を確定しました</h2>
+    
+<div style="text-align: right; margin-bottom: 4px;">
+  <button class="btn btn-light btn-sm"
+          style="border: none; background: transparent; color: #666;"
+          title="情報を更新"
+          onclick="handleReload()">
+    <i class="fas fa-sync-alt"></i>
+  </button>
+</div>
+
+<h2>🎉 注文を確定しました</h2>
     <div class="spacer"></div>
     <p id="done-summary" style="text-align:left"></p>
     <div class="spacer"></div>
@@ -1142,6 +1152,24 @@ $("#btn-news-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
     }
   });
 })();
+</script>
+
+
+
+
+
+<script>
+async function handleReload(){
+  try{
+    if (typeof showLoading === 'function') showLoading(true);
+    const tasks = [];
+    if (typeof loadDashboard === 'function') tasks.push(loadDashboard());
+    if (typeof loadPublicOverviewAuth === 'function') tasks.push(loadPublicOverviewAuth());
+    await Promise.allSettled(tasks);
+  } finally {
+    if (typeof showLoading === 'function') showLoading(false);
+  }
+}
 </script>
 
 </body>
