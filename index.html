@@ -392,7 +392,7 @@
    基本情報
 ========================= */
 const APP_VERSION="v2.5.5";
-const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbxhUcRUv9FwME0uyTGoZ4i6WNOhPtyARbgKakXOQM2hko6HZpJBVMK2OtZEaj_slUZ4qw/exec"; // ← あなたのGAS /exec に差し替え
+const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbwiLTeBKGIrWaDT8oZdAQ0uj1MQYfJ4NaasYjU2aXDnS8I9Y_obEKTe8EQHkfH5J_ICSQ/exec"; // ← あなたのGAS /exec に差し替え
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
 const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).toString().padStart(2,"0")}:${String(d.getMinutes()).toString().padStart(2,"0")}`};
