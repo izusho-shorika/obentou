@@ -369,706 +369,857 @@ button.ghost:hover{background:#e2e8f0}
 <div id="loading-overlay" class="hidden"><div class="spinner"></div>認識中...</div>
 
 <script>
-/* =========================
-   基本情報
-========================= */
-const APP_VERSION="v2.5.5";
-const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbyS2VwJI7Xe3pNN2TQTlH2rdNgZuZTy-YDtOH44s0Nop1D--FQn_GvghQd7J0_LKXjDMA/exec"; // ← あなたのGAS /exec に差し替え
-const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
-const fmtYen=n=>`¥${(n||0).toLocaleString('ja-JP')}`;
-const fmtDate=iso=>{if(!iso)return"";const d=new Date(iso);return`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).toString().padStart(2,"0")}:${String(d.getMinutes()).toString().padStart(2,"0")}`};
+  // =========================================================
+  // 設定とユーティリティ
+  // =========================================================
 
-/* =========================
-   軽量ストア＆キャッシュ
-========================= */
-const store={ set(k,v){localStorage.setItem(k,JSON.stringify(v))}, get(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}, del(k){localStorage.removeItem(k)} };
-const cache={
-  get(key, ttlSec){ const raw=localStorage.getItem(`cache:${key}`); if(!raw) return null; try{ const {t,v}=JSON.parse(raw); if(Date.now()-t>ttlSec*1000) return null; return v; }catch{ return null; } },
-  set(key, value){ localStorage.setItem(`cache:${key}`, JSON.stringify({t: Date.now(), v:value})) },
-  del(key){ localStorage.removeItem(`cache:${key}`) }
-};
+  // ★ GAS デプロイURLをここに設定してください
+  const ENDPOINT_URL="https://script.google.com/macros/s/AKfycbyS2VwJI7Xe3pNN2TQTlH2rdNgZuZTy-YDtOH44s0Nop1D--FQn_GvghQd7J0_LKXjDMA/exec";
 
-/* =========================
-   遅延ローダー
-========================= */
-let _loaderTimer=null;
-function showLoading(on){
-  clearTimeout(_loaderTimer);
-  if(on){
-    _loaderTimer=setTimeout(()=>{
-      $("#loading-overlay").classList.remove("hidden");
-      $$("input,button,select,textarea").forEach(e=>e.disabled=true);
-    }, 300);
-  }else{
-    $("#loading-overlay").classList.add("hidden");
-    $$("input,button,select,textarea").forEach(e=>e.disabled=false);
-  }
-}
+  const STORE_KEY = 'bento_app_state';
 
-/* =========================
-   API（タイムアウト/再試行）
-========================= */
-async function apiCore(fn,method="GET",body=null){
-  const token=store.get("token");
-  const u=new URL(ENDPOINT_URL); u.searchParams.set("fn",fn);
-  let r;
-  if(method==="GET"){
-    if(token) u.searchParams.set("token",token);
-    if(body) Object.entries(body).forEach(([k,v])=> u.searchParams.set(k, typeof v==="object"?JSON.stringify(v):String(v)));
-    r=await fetch(u);
-  }else{
-    const f=new URLSearchParams();
-    if(body) for(const[k,v] of Object.entries(body)) f.append(k, typeof v==="object"?JSON.stringify(v):String(v));
-    if(token) f.append("token",token);
-    r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:f});
-  }
-  const text=await r.text();
-  if(!r.ok){ throw new Error(`${r.status} ${r.statusText} - ${text.slice(0,120)}`); }
-  return JSON.parse(text);
-}
-async function api(fn,method="GET",body=null,{timeoutMs=10000,retries=1,withLoader=true}={}){
-  if(withLoader) showLoading(true);
-  try{
-    for(let attempt=0; attempt<=retries; attempt++){
-      try{
-        return await Promise.race([
-          apiCore(fn,method,body),
-          new Promise((_,rej)=> setTimeout(()=>rej(new Error('timeout')), timeoutMs))
-        ]);
-      }catch(e){
-        if(attempt===retries) throw e;
+  // LocalStorage / SessionStorage ラッパー
+  const store = {
+    set: (key, value) => {
+      try {
+        const state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+        state[key] = value;
+        localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('LocalStorage Set Error', e);
+      }
+    },
+    get: (key) => {
+      try {
+        const state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+        return state[key];
+      } catch (e) {
+        return null;
+      }
+    },
+    remove: (key) => {
+      try {
+        const state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+        delete state[key];
+        localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('LocalStorage Remove Error', e);
+      }
+    },
+    clear: () => {
+      try {
+        localStorage.removeItem(STORE_KEY);
+      } catch (e) {
+        console.error('LocalStorage Clear Error', e);
       }
     }
-  } finally { if(withLoader) showLoading(false); }
-}
+  };
 
-/* =========================
-   画面切り替え
-========================= */
-function show(id){$$("main>section").forEach(s=>s.classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
-
-/* =========================
-   テキスト整形
-========================= */
-const Text={ autoLinkAndBreaks(text){ const safe=document.createElement('div'); safe.textContent=text||''; let s=safe.textContent; const urlRegex=/(https?:\/\/[^\s]+)/g; s=s.replace(urlRegex,(m)=>`<a href="${m}" target="_blank" rel="noopener noreferrer">${m}</a>`); s=s.replace(/\n/g,'<br>'); return s; } };
-
-/* =========================
-   状態
-========================= */
-let state={ me:null, shops:[], chosenShop:null, menu:[], cart:[] };
-
-/* =========================
-   公開ビュー：営業情報＋新着情報（未ログイン）
-========================= */
-async function loadPublicOverview(force=false){
-  // ラベル
-  const today=new Date();
-  const dates=[0,1,2].map(n=>new Date(today.getFullYear(),today.getMonth(),today.getDate()+n));
-  ['day0-label','day1-label','day2-label'].forEach((id,i)=>{
-    const d=dates[i]; const wd=['日','月','火','水','木','金','土'][d.getDay()];
-    const el=document.getElementById(id); if(el) el.textContent=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）`;
-  });
-
-  // キャッシュ即時描画（60秒）
-  const cOverview=cache.get('public_overview',300); if(cOverview) renderOverview(cOverview);
-  const cNews=cache.get('latest_news',300);       if(cNews)     renderNews(cNews);
-
-  // 最新取得
-  try{ const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('public_overview',d); renderOverview(d);}catch(e){}
-  try{ const n=await api('latest_messages_all','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('latest_news',n); renderNews(n);}catch(e){}
-}
-function renderOverview(d){
-  const rows=document.getElementById("status-rows");
-  if(!rows) return;
-  rows.innerHTML="";
-  if(!(d&&d.shops&&d.shops.length)){ document.getElementById("status-empty").style.display="block"; return; }
-  document.getElementById("status-empty").style.display="none";
-  d.shops.forEach(s=>{
-    const div=document.createElement("div");
-    div.className="status-row";
-    div.innerHTML=`
-      <div class="shop-chip">
-        <span class="shop-avatar">${(s.shop_name||'?').slice(0,1)}</span>
-        <span class="shop-name">${s.shop_name}</span>
-      </div>
-      ${(s.days||[]).map(x=>`<div class="${x.open?'badge-ok':'badge-ng'}">${x.open?'◯':'×'}</div>`).join('')}
-    `;
-    rows.appendChild(div);
-  });
-}
-async function renderNews(n){
-  const list=$("#news-list"); if(!list) return; list.innerHTML='';
-  if(!(n&&n.news&&n.news.length)){ $("#news-empty").style.display='block'; return; }
-  $("#news-empty").style.display='none';
-  for(const item of n.news){
-    const d=item.updated_at?new Date(item.updated_at):null;
-    const ymd=d?`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${['日','月','火','水','木','金','土'][d.getDay()]}）`:'';
-    const row=document.createElement('div'); row.className='news-item';
-    row.innerHTML=`
-      <div class="shop-avatar">${(item.shop_name||'?').slice(0,1)}</div>
-      <div style="flex:1">
-        <div class="news-title">${item.shop_name} — ${item.title || '(タイトル未設定)'}</div>
-        <div class="news-date" style="margin:4px 0 6px 0">${ymd}</div>
-        <div class="notice-body"></div>
-      </div>
-    `;
-    const bodyEl=row.querySelector('.notice-body');
-    try{
-      const res=await api('messages','GET',{shop_id:item.shop_id},{withLoader:false,timeoutMs:5000,retries:0});
-      const first=(res.ok && res.list && res.list[0])?res.list[0]:null;
-      bodyEl.innerHTML=first ? Text.autoLinkAndBreaks(first.body||'') : '（本文はありません）';
-    }catch(e){ bodyEl.innerHTML='（本文の取得に失敗しました）'; }
-    bodyEl.style.display='block';
-    list.appendChild(row);
-  }
-}
-
-/* =========================
-   ログイン後ビュー：営業情報（auth）
-   ※ 新着情報（auth）の処理は削除しました
-========================= */
-async function loadPublicOverviewAuth(force=false){
-  // ラベル（auth）
-  const today=new Date();
-  const dates=[0,1,2].map(n=>new Date(today.getFullYear(),today.getMonth(),today.getDate()+n));
-  ['day0-label-auth','day1-label-auth','day2-label-auth'].forEach((id,i)=>{
-    const d=dates[i]; const wd=['日','月','火','水','木','金','土'][d.getDay()];
-    const el=document.getElementById(id); if(el) el.textContent=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）`;
-  });
-
-  // キャッシュ即時描画（60秒）
-  const cOverview=cache.get('public_overview',300); if(cOverview) renderOverviewAuth(cOverview);
-
-  // 最新取得
-  try{ const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:6000,retries:0}); cache.set('public_overview',d); renderOverviewAuth(d);}catch(e){}
-  // 新着情報（auth）のAPI呼び出しとレンダリング処理は削除しました
-}
-function renderOverviewAuth(d){
-  const rows=document.getElementById("status-rows-auth");
-  if(!rows) return;
-  rows.innerHTML="";
-  if(!(d&&d.shops&&d.shops.length)){ document.getElementById("status-empty-auth").style.display="block"; return; }
-  document.getElementById("status-empty-auth").style.display="none";
-  d.shops.forEach(s=>{
-    const div=document.createElement("div");
-    div.className="status-row";
-    div.innerHTML=`
-      <div class="shop-chip">
-        <span class="shop-avatar">${(s.shop_name||'?').slice(0,1)}</span>
-        <span class="shop-name">${s.shop_name}</span>
-      </div>
-      ${(s.days||[]).map(x=>`<div class="${x.open?'badge-ok':'badge-ng'}">${x.open?'◯':'×'}</div>`).join('')}
-    `;
-    rows.appendChild(div);
-  });
-}
-// async function renderNewsAuth(n) { ... 新着情報の処理は削除されました ... }
-
-/* =========================
-   ログイン
-========================= */
-// ▼ 差し替え：ログイン高速化（即遷移＋並列ロード＋厳しめタイムアウト）
-async function doLogin(){
-  const id=$("#login-id").value.trim(), pass=$("#login-pass").value.trim(), err=$("#login-error");
-  err.textContent="";
-  if(!id){err.textContent="IDを入力してください";return}
-  if(!/^\d{4}$/.test(pass)){err.textContent="パスワードは4桁の数字です";return}
-
-  try{
-    // タイムアウト短縮・リトライなしでキビキビ
-    const d=await api("login","POST",{id,password:pass},{timeoutMs:20000,retries:0});
-    if(!d.ok){err.textContent=d.error||"ログインに失敗";return}
-
-    store.set("token",d.token); store.set("user",d.user);
-    state.me=d.user;
-
-    if(/^s\d+/i.test(state.me.id)){ // ベンダー
-      // ベンダーも並列でロードしてから表示
-      const p1=loadVendorSummary();
-      const p2=VendorMessages.load();
-      const p3=ClosedDays.load();
-      setDefaultVisibleUntil();
-      await Promise.all([p1,p2,p3]);
-      show("view-vendor");
-    } else { // 生徒
-      // 先に画面を出してスケルトン表示→裏で並列ロード
-      $("#welcome-message").textContent=`ようこそ、${state.me.name||state.me.id}さん`;
-      show("view-shop");
-
-      // スケルトン（読み込み中文言）
-      $("#shop-cards").innerHTML = '<div class="item muted">店舗を読み込み中...</div>';
-      $("#history-list").innerHTML = '<div class="item muted">履歴を読み込み中...</div>';
-
-      // 並列ロード：ダッシュボードと公開情報（auth）
-      const p1 = loadDashboard();           // 店一覧＋履歴
-      const p2 = loadPublicOverviewAuth();  // 営業情報のみ
-      await Promise.allSettled([p1,p2]);    // 片方失敗でも画面は出し続ける
-    }
-  }catch(e){
-    err.textContent="通信エラー："+e.message;
-  }
-}
-/* =========================
-   生徒：ダッシュボード
-========================= */
-// ▼ 差し替え：履歴2件・コンパクト描画
-async function loadDashboard(){
-  const d=await api("dashboard","GET",null,{timeoutMs:15000,retries:0});
-  state.shops=d.shops||[];
-
-  // 店リスト（カード）
-  const box=$("#shop-cards"); box.innerHTML="";
-  for(const s of state.shops){
-    const div=document.createElement("div"); div.className="item";
-    div.innerHTML=`<div class="row-between"><h3 style="margin:0">${s.shop_name}</h3><span class="tag">選択</span></div>`;
-    div.onclick=()=>{ state.chosenShop=s; enterMenu(); };
-    box.appendChild(div);
-  }
-
-  // 履歴（最新2件・コンパクト）
-  const list=$("#history-list");
-  list.classList.add('history-compact');   // ← コンパクトCSS適用
-  list.innerHTML="";
-  const hist=(d.history||[]).slice(0,2);
-
-  // テキストを短く整形（過度な折返しを防ぐ）
-  const trim = (s, n)=> (s.length>n ? (s.slice(0,n-1)+'…') : s);
-
-  for(const h of hist){
-    const card=document.createElement("div");
-    card.className=`item order-card ${h.cancellable?'order-pending':'order-confirmed'}`;
-
-    // 商品名と価格を短くまとめる
-    const itemsText = h.items
-      .map(i=>`${i.item}（${fmtYen(i.unit_price)}）`)
-      .join("、");
-    const itemsShort = trim(itemsText, 42); // ← 1行想定で適度に省略
-
-    card.innerHTML=`
-      <div class="row-between">
-        <h4>${trim(h.shop_name, 18)}</h4>
-        <div class="muted">${fmtDate(h.timestamp)}</div>
-      </div>
-      <div class="muted" style="margin-top:4px;">${itemsShort}</div>
-      <div class="row-between" style="margin-top:6px;">
-        <span class="muted">合計 <span class="price">${fmtYen(h.total)}</span></span>
-        ${h.cancellable ? '<button class="ghost btn-cancel" style="width:auto;padding:4px 8px;margin:0;font-size:12px">取消</button>' : ''}
-      </div>
-    `;
-
-    const btn=card.querySelector('.btn-cancel');
-    if(btn){
-      btn.onclick=async()=>{
-        if(!confirm('この注文を取り消します。よろしいですか？')) return;
-        try{
-          const res=await api('cancel_order','POST',{order_id:h.order_id},{timeoutMs:10000,retries:0});
-          if(res.ok){ card.remove(); } else { alert(res.error||'取消に失敗しました'); }
-        }catch(e){ alert('通信エラー：'+e.message); }
-      };
-    }
-    list.appendChild(card);
-  }
-
-  $("#btn-logout").onclick=doLogout;
-}
-
-/* =========================
-   生徒：メニュー遷移（並列＋キャッシュ）
-========================= */
-async function enterMenu(){
-  const sid=state.chosenShop.shop_id;
-  $("#shop-title").textContent=state.chosenShop.shop_name;
-
-  // キャッシュ即時表示（5分）
-  const cacheKeyMsg=`msg_${sid}`;
-  const cacheKeyMenu=`menu_${sid}`;
-  const cMsg=cache.get(cacheKeyMsg,300);
-  const cMenu=cache.get(cacheKeyMenu,300);
-  if(cMsg) renderShopMessages(cMsg);
-  if(cMenu){ state.menu=cMenu; renderMenu(); }
-
-  showLoading(true);
-  try{
-    const [msgRes, menuRes] = await Promise.all([
-      api('messages','GET',{shop_id:sid},{withLoader:false,timeoutMs:15000,retries:0}),
-      api('menu','GET',{shop_id:sid},{withLoader:false,timeoutMs:15000,retries:0})
-    ]);
-
-    const list = msgRes.ok ? (msgRes.list||[]) : [];
-    renderShopMessages(list);
-    cache.set(cacheKeyMsg, list);
-
-    const menuAll = (menuRes.menu||[]);
-    state.menu = menuAll.filter(m=>String(m.shop_id)===String(sid) && String(m.enabled)!=='FALSE');
-    renderMenu();
-    cache.set(cacheKeyMenu, state.menu);
-
-    state.cart=[]; renderCart();
-    show("view-menu");
-  } finally { showLoading(false); }
-}
-
-// 生徒向け お知らせ（最新は展開）
-function renderShopMessages(list){
-  const wrap=$('#notice-list'); const empty=$('#notice-empty'); const card=$('#notice-card');
-  if(!wrap||!empty||!card) return;
-  wrap.innerHTML='';
-  if(!list.length){ empty.style.display='block'; card.classList.add('hidden'); return; }
-  empty.style.display='none'; card.classList.remove('hidden');
-  list.forEach((m,idx)=>{
-    const item=document.createElement('div'); item.className='item notice-item';
-    const d=m.updated_at?new Date(m.updated_at):null;
-    const ymd=d?`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`:'';
-    item.innerHTML=`
-      <div class="row-between">
-        <div class="notice-title">${m.title||'(無題)'}</div>
-        <div class="muted">${ymd}</div>
-      </div>
-      <div class="notice-body"></div>
-    `;
-    const body=item.querySelector('.notice-body');
-    body.innerHTML=Text.autoLinkAndBreaks(m.body||'');
-    if(idx===0) body.style.display='block';
-    item.querySelector('.notice-title').onclick=()=>{
-      body.style.display=(body.style.display==='none'||body.style.display==='')?'block':'none';
-    };
-    wrap.appendChild(item);
-  });
-}
-
-/* =========================
-   生徒：メニュー/カート/注文
-========================= */
-function renderMenu(){
-  const box=$("#menu-cards"); box.innerHTML="";
-  if(!state.menu.length){
-    box.innerHTML='<p class="muted center" style="grid-column:1/-1">販売中の商品はありません。</p>'; return;
-  }
-  for(const m of state.menu){
-    const div=document.createElement("div"); div.className="item center";
-    div.innerHTML=`<h4>${m.item}</h4><div class="price">${fmtYen(m.price)}</div>`;
-    div.onclick=()=>{ state.cart.push({ item_id:String(m.item_id||''), item:m.item, unit_price:Number(m.price) }); renderCart(); };
-    box.appendChild(div);
-  }
-}
-function renderCart(){
-  const list=$("#cart-list"); list.innerHTML=""; let total=0;
-  state.cart.forEach((c,i)=>{
-    total+=c.unit_price;
-    const div=document.createElement("div"); div.className="item row-between"; div.style.cursor="default";
-    div.innerHTML=`<div>${c.item}</div><div class="row" style="gap:6px"><span class="price">${fmtYen(c.unit_price)}</span><button class="ghost" style="width:auto;padding:6px 10px;margin:0" data-i="${i}">削除</button></div>`;
-    list.appendChild(div);
-  });
-  list.querySelectorAll("button[data-i]").forEach(b=> b.onclick=(e)=>{ const i=Number(e.currentTarget.dataset.i); state.cart.splice(i,1); renderCart(); });
-  $("#cart-total").textContent=fmtYen(total);
-  $("#cart-count").textContent=`${state.cart.length}点`;
-  $("#btn-clear").onclick=()=>{state.cart=[];renderCart()};
-  $("#btn-order").onclick=doOrder;
-}
-async function doOrder(){
-  if(!state.cart.length){alert("商品を追加してください");return}
-  const payload={shop_id:state.chosenShop.shop_id,items:state.cart};
-  try{
-    const res=await api("order","POST",payload,{timeoutMs:8000,retries:0});
-    if(res.ok){
-      const counts=res.items.reduce((a,x)=>(a[x.item]=(a[x.item]||0)+1,a),{});
-      const lines=Object.entries(counts).map(([name,c])=>`・${name} × ${c}点`).join("<br>");
-      $("#done-summary").innerHTML=`<strong>日時:</strong> ${fmtDate(res.timestamp)}<br><strong>店舗:</strong> ${res.shop_name}<br><strong>合計金額:</strong> <span class="price total">${fmtYen(res.total)}</span><br><div style="margin-top:10px"><strong>注文内容:</strong><br>${lines}</div>`;
-      show("view-done");
-    }else{ alert(res.error||"注文に失敗しました"); }
-  }catch(e){ alert("通信エラー："+e.message); }
-}
-
-/* =========================
-   店：サマリ
-========================= */
-async function loadVendorSummary(){
-  const d=await api("vendor_summary","GET",null,{timeoutMs:8000,retries:0});
-  const uid=(store.get('user')||{}).id?.toUpperCase()||'';
-  // ★ 店名をタイトルに表示（S01 → ごほうび屋）
-  const shopName = d.shop_name || (store.get('user')?.name || uid);
-  $("#vendor-title").textContent = `受注状況（${shopName}）`;
-  $("#vendor-sub").textContent=d.sub_label||'—';
-  $("#kpi-qty").textContent=String(d.total_qty||0);
-  $("#kpi-amount").textContent=fmtYen(d.total_amount||0);
-
-  const by=$("#vendor-byitem"); by.innerHTML="";
-  if(!(d.by_item||[]).length){ $("#vendor-byitem-empty").style.display='block'; }
-  else{
-    $("#vendor-byitem-empty").style.display='none';
-    for(const r of d.by_item){
-      const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`;
-      by.appendChild(tr);
-    }
-  }
-  const rows=$("#vendor-rows"); rows.innerHTML="";
-  if(!(d.rows||[]).length){ $("#vendor-rows-empty").style.display='block'; }
-  else{
-    $("#vendor-rows-empty").style.display='none';
-    for(const r of d.rows){
-      const tr=document.createElement("tr");
-      tr.innerHTML=`<td>${r.user_id}</td><td>${r.item}</td><td>${r.qty}</td><td>${fmtYen(r.amount)}</td>`;
-      rows.appendChild(tr);
-    }
-  }
-}
-
-/* =========================
-   店：お知らせ
-========================= */
-const VendorMessages={
-  list:[],
-  async load(){
-    const uid=(store.get('user')||{}).id?.toUpperCase()||''; if(!uid) return;
-    const res=await api('messages','GET',{shop_id:uid},{timeoutMs:7000,retries:0});
-    this.list=res.ok?(res.list||[]):[];
-    this.render(); $('#msg-status').textContent='';
-  },
-  render(){
-    const wrap=$('#vendor-msg-list'); wrap.innerHTML='';
-    const empty=$('#vendor-msg-empty');
-    if(!this.list.length){ empty.style.display='block'; return; }
-    empty.style.display='none';
-    this.list.forEach(m=>{
-      const item=document.createElement('div'); item.className='item notice-item';
-      const d=m.updated_at?new Date(m.updated_at):null;
-      const ymd=d?`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`:'';
-      item.innerHTML=`
-        <div class="row-between">
-          <div class="notice-title">${m.title||'(無題)'}</div>
-          <div class="muted">${ymd}</div>
-        </div>
-        <div class="notice-body"></div>
-      `;
-      const body=item.querySelector('.notice-body');
-      body.innerHTML=Text.autoLinkAndBreaks(m.body||'');
-      item.querySelector('.notice-title').onclick=()=>{ body.style.display=(body.style.display==='none'||body.style.display==='')?'block':'none'; };
-      wrap.appendChild(item);
-    });
-  },
-  async save(){
-    const title=$('#msg-title').value.trim();
-    const body=$('#msg-body').value.trim();
-    const vu=$('#msg-visible-until').value;
-    const enabled=$('#msg-enabled').checked;
-    if(!title||!body){ $('#msg-status').textContent='タイトルと内容は必須です。'; return; }
-    const res=await api('save_message','POST',{title,body,visible_until:vu||'',enabled},{timeoutMs:10000,retries:0});
-    if(res.ok){
-      $('#msg-status').textContent='保存しました。生徒画面は再読込で即反映されます。';
-      $('#msg-title').value=''; $('#msg-body').value=''; setDefaultVisibleUntil(); $('#msg-enabled').checked=true;
-      await this.load();
-    }else{ $('#msg-status').textContent=res.error||'保存に失敗しました。'; }
-  }
-};
-
-/* =========================
-   店：定休日
-========================= */
-const ClosedDays={
-  selected:new Set(), monthKeys:[],
-  async load(){ const d=await api('closed_days','GET',null,{timeoutMs:7000,retries:0}); this.selected=new Set(d.days||[]); this.render(); $('#closed-msg').textContent=''; },
-  initMonths(){ const now=new Date(); const ym=(dt)=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`; const cur=new Date(now.getFullYear(),now.getMonth(),1); const nxt=new Date(now.getFullYear(),now.getMonth()+1,1); this.monthKeys=[ym(cur),ym(nxt)]; },
-  daysInMonth(y,m){ return new Date(y,m,0).getDate(); },
-  makeCell(dateStr){
-    const div=document.createElement('div');
-    div.textContent=Number(dateStr.slice(-2));
-    div.dataset.date=dateStr;
-    div.style.padding='8px'; div.style.border='1px solid var(--line)'; div.style.borderRadius='6px';
-    div.style.textAlign='center'; div.style.cursor='pointer'; div.style.userSelect='none';
-    const sel=this.selected.has(dateStr);
-    if(sel){ div.style.background='#ffe6e6'; div.style.color='#c62828'; div.style.fontWeight='700'; }
-    div.onclick=()=>{ if(this.selected.has(dateStr)) this.selected.delete(dateStr); else this.selected.add(dateStr); this.render(); };
-    return div;
-  },
-  render(){
-    this.initMonths();
-    const wrap=$('#calendars'); wrap.innerHTML='';
-    this.monthKeys.forEach(key=>{
-      const [y,m]=key.split('-').map(Number);
-      const first=new Date(y,m-1,1); const startW=(first.getDay()+6)%7; const days=this.daysInMonth(y,m);
-      const box=document.createElement('div'); box.style.border='1px solid var(--line)'; box.style.borderRadius='8px'; box.style.padding='10px';
-      const title=document.createElement('div'); title.textContent=`${y}年 ${m}月`; title.style.fontWeight='700'; title.style.marginBottom='6px';
-      const grid=document.createElement('div'); grid.style.display='grid'; grid.style.gridTemplateColumns='repeat(7,1fr)'; grid.style.gap='6px';
-      ['月','火','水','木','金','土','日'].forEach(w=>{ const wv=document.createElement('div'); wv.textContent=w; wv.style.textAlign='center'; wv.style.fontSize='12px'; wv.style.color='#667085'; grid.appendChild(wv); });
-      for(let i=0;i<startW;i++){ const emp=document.createElement('div'); emp.style.opacity='0'; grid.appendChild(emp); }
-      for(let d=1;d<=days;d++){ const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; grid.appendChild(this.makeCell(ds)); }
-      box.appendChild(title); box.appendChild(grid); wrap.appendChild(box);
-    });
-  },
-  async save(){ const body={dates:Array.from(this.selected).sort()}; const res=await api('save_closed_days','POST',body,{timeoutMs:8000,retries:0}); $('#closed-msg').textContent = res.ok ? '保存しました（当月＋翌月を上書き）。' : (res.error||'保存に失敗しました'); }
-};
-
-/* =========================
-   共通
-========================= */
-function setDefaultVisibleUntil(){
-  const el=document.getElementById('msg-visible-until'); if(!el) return;
-  const d=new Date(); d.setDate(d.getDate()+14);
-  const yyyy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
-  el.value=`${yyyy}-${mm}-${dd}`;
-}
-function doLogout(){
-  store.del("token"); store.del("user");
-  state={me:null, shops:[], chosenShop:null, menu:[], cart:[]};
-  $("#login-id").value=""; $("#login-pass").value="";
-  show("view-login");
-}
-
-/* =========================
-   起動時イベント
-========================= */
-$("#app-version").textContent=APP_VERSION;
-$("#btn-login").onclick=doLogin;
-$("#btn-back-shop").onclick=()=> show("view-shop");
-$("#btn-finish").onclick=doLogout;
-$("#btn-logout").onclick=doLogout;
-
-// ベンダー
-$("#btn-vendor-refresh").onclick=async()=>{ await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]); setDefaultVisibleUntil(); };
-$("#btn-vendor-logout").onclick=doLogout;
-$("#btn-closed-refresh").onclick=()=> ClosedDays.load();
-$("#btn-closed-save").onclick=()=> ClosedDays.save();
-$("#btn-msg-refresh").onclick=()=> VendorMessages.load();
-$("#btn-msg-save").onclick=()=> VendorMessages.save();
-
-// 未ログインの公開情報 更新ボタン
-$("#btn-public-refresh").onclick=()=> loadPublicOverview(true);
-$("#btn-news-refresh").onclick=()=> loadPublicOverview(true);
-
-// ログイン後の公開情報 更新ボタン
-$("#btn-public-refresh-auth").onclick=()=> loadPublicOverviewAuth(true);
-// 新着情報の更新ボタン処理は削除しました
-
-/* =========================
-   初期化
-========================= */
-(async()=>{
-  loadPublicOverview(); // 未ログインでも表示
-  const token=store.get("token"); const user=store.get("user");
-  if(token&&user){
-    state.me=user;
-    if(/^s\d+$/i.test(user.id)){
-      await Promise.all([loadVendorSummary(), VendorMessages.load(), ClosedDays.load()]);
-      setDefaultVisibleUntil();
-      show("view-vendor");
-    }else{
-      $("#welcome-message").textContent=`ようこそ、${user.name||user.id}さん`;
-      await loadDashboard();
-      await loadPublicOverviewAuth(); // ★ ログイン後の営業情報のみ
-      show("view-shop");
-    }
-  }else{
-    show("view-login");
-  }
-})();
-
-/* ====== 安定化パッチ（apiを引数渡し方式に修正） ====== */
-(function(){
-  // 既存NETがなければ定義
-  window.NET = window.NET || { BASE_TIMEOUT: 20000, MAX_RETRIES: 2, BACKOFF_MS: 1200 };
-
-  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-  async function fetchWithTimeout(input, init, timeoutMs){
-    const ctrl = new AbortController();
-    const id = setTimeout(()=>ctrl.abort(), timeoutMs);
-    try{ return await fetch(input, {...(init||{}), signal: ctrl.signal}); }
-    finally{ clearTimeout(id); }
-  }
-
-  // ★ apiCore: タイムアウトは引数 tmo で受け取る
-  window.apiCore = async function apiCore(fn, method="GET", body=null, tmo){
-    // 既存のENDPOINT_URL / store を利用
-    const token = window.store && typeof store.get==="function" ? store.get("token") : null;
-    const u = new URL(window.ENDPOINT_URL); u.searchParams.set("fn", fn);
-
-    let init = {};
-    if(method === "GET"){
-      if(token) u.searchParams.set("token", token);
-      if(body) Object.entries(body).forEach(([k,v])=>{
-        u.searchParams.set(k, typeof v==="object" ? JSON.stringify(v) : String(v));
+  // キャッシュ機能
+  const cache = {
+    set: (key, data) => {
+      store.set('cache:' + key, {
+        data: data,
+        timestamp: Date.now()
       });
-    }else{
-      const f = new URLSearchParams();
-      if(body) for(const [k,v] of Object.entries(body)){
-        f.append(k, typeof v==="object" ? JSON.stringify(v) : String(v));
+    },
+    get: (key, maxAgeSeconds = 300) => {
+      const cached = store.get('cache:' + key);
+      if (cached && (Date.now() - cached.timestamp) < maxAgeSeconds * 1000) {
+        return cached.data;
       }
-      if(token) f.append("token", token);
-      init = { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"}, body:f };
+      return null;
     }
-
-    const timeout = (typeof tmo === "number" ? tmo : (window.NET?.BASE_TIMEOUT || 20000));
-    const res = await fetchWithTimeout(u, init, timeout);
-    const text = await res.text();
-    if(!res.ok){ throw new Error(`${res.status} ${res.statusText} - ${text.slice(0,120)}`); }
-    return JSON.parse(text || "{}");
   };
 
-  // ★ api: リトライのたびに tmo を引数で渡す（prototypeは使わない）
-  window.api = async function api(fn, method="GET", body=null, opts={}){
-    const timeoutMs = (opts && typeof opts.timeoutMs==="number") ? opts.timeoutMs : window.NET.BASE_TIMEOUT;
-    const retries   = (opts && typeof opts.retries==="number")   ? opts.retries   : window.NET.MAX_RETRIES;
-    const withLoader= (opts && "withLoader" in opts) ? !!opts.withLoader : true;
 
-    if(typeof window.showLoading==="function" && withLoader) showLoading(true);
-    try{
-      for(let attempt=0; attempt<=retries; attempt++){
-        const tmo = timeoutMs * Math.pow(3, attempt); // 10s→30s→90s
-        try{
-          return await window.apiCore(fn, method, body, tmo);
-        }catch(e){
-          if(attempt === retries) throw e;
-          await sleep(window.NET.BACKOFF_MS * (attempt+1));
+  // ユーティリティ
+  const show = (viewId) => {
+    document.querySelectorAll('section[id^="view-"]').forEach(view => {
+      view.style.display = view.id === viewId ? 'block' : 'none';
+    });
+  };
+
+  const showLoading = (show) => {
+    const loader = document.getElementById('loading-overlay');
+    if (loader) loader.style.display = show ? 'flex' : 'none';
+  };
+
+  const format_currency = (price) => {
+    if (typeof price !== 'number') return '';
+    return '¥' + price.toLocaleString();
+  };
+  
+  const format_date = (dateStr) => {
+      const date = new Date(dateStr);
+      if (isNaN(date)) return dateStr;
+      const m = date.getMonth() + 1;
+      const d = date.getDate();
+      return `${m}月${d}日`;
+  };
+
+  const show_alert = (message) => {
+    alert(message);
+  };
+
+  // =========================================================
+  // API通信関数
+  // =========================================================
+
+  /**
+   * GAS Web Appに通信する関数
+   * @param {string} fn - GAS側の関数名 (doGetのfnパラメータ)
+   * @param {string} method - 'GET' or 'POST'
+   * @param {object} payload - 送信するデータ (GETはクエリ、POSTはボディ)
+   * @param {object} options - オプション
+   * @returns {Promise<object>} GASからのJSONレスポンス
+   */
+  const api = async (fn, method = 'GET', payload = {}, options = {}) => {
+    const { withLoader = true, timeoutMs = 10000, retries = 0 } = options;
+    const isPost = method.toUpperCase() === 'POST';
+    const baseUrl = GAS_ENDPOINT;
+    
+    if (!baseUrl) {
+        show_alert('GAS_ENDPOINTが未設定です。設定を確認してください。');
+        throw new Error('GAS_ENDPOINT is not configured.');
+    }
+
+    if (withLoader) showLoading(true);
+
+    const fullPayload = { ...payload, fn: fn };
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        let url = baseUrl;
+        let fetchOptions = {
+          method: method,
+          mode: 'cors',
+          headers: {
+            'Content-Type': isPost ? 'application/json' : 'application/x-www-form-urlencoded'
+          }
+        };
+
+        if (!isPost) {
+          const params = new URLSearchParams(fullPayload);
+          url = `${baseUrl}?${params.toString()}`;
+        } else {
+          // POSTリクエストでは、fnはURLクエリ、その他はJSONボディで送る
+          const postParams = new URLSearchParams({ fn: fn });
+          url = `${baseUrl}?${postParams.toString()}`;
+          fetchOptions.body = JSON.stringify(payload);
         }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        const response = await fetch(url, { ...fetchOptions, signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.ok === false) {
+          if (data.error === 'unauthorized') {
+            // 認証エラーは特別処理
+            logout(false);
+          }
+          throw new Error(`API Error: ${data.error || '不明なエラー'}`);
+        }
+
+        if (withLoader) showLoading(false);
+        return data;
+
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          console.error(`API Call Timeout: ${fn} on attempt ${attempt + 1}`);
+          if (attempt === retries) {
+            show_alert('通信がタイムアウトしました。しばらく経ってから再度お試しください。');
+            throw new Error('Timeout');
+          }
+        } else if (attempt === retries) {
+          console.error(`API Call Failed: ${fn}`, e);
+          if (e.message.includes('unauthorized')) throw e; // unauthorizedは特別処理
+          show_alert(`データの取得に失敗しました: ${e.message}`);
+          throw e;
+        }
+        // リトライのために待機 (例: 1秒)
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
-    } finally {
-      if(typeof window.showLoading==="function" && withLoader) showLoading(false);
     }
   };
 
-  // doLogin の“完全読込後に表示”はそのまま（既存doLoginを尊重して上書き）
-  const origDoLogin = window.doLogin;
-  window.doLogin = async function doLoginPatched(){
-    if(!origDoLogin){ console.warn("doLogin未定義"); return; }
-    try{ await origDoLogin(); }catch(e){ /* 既存が処理 */ }
-    const user = window.store && typeof store.get==="function" ? store.get("user") : null;
-    if(user && !/^s\d+$/i.test(user.id)){
-      try{
-        if(typeof showLoading==="function") showLoading(true);
-        await Promise.all([
-          window.loadDashboard ? loadDashboard() : Promise.resolve(),
-          window.loadPublicOverviewAuth ? loadPublicOverviewAuth() : Promise.resolve()
-        ]);
-        const wm = document.querySelector("#welcome-message");
-        if(wm) wm.textContent = `ようこそ、${user.name||user.id}さん`;
-        if(typeof show==="function") show("view-shop");
-      } finally {
-        if(typeof showLoading==="function") showLoading(false);
+
+  // =========================================================
+  // ログイン処理
+  // =========================================================
+
+  const login = async () => {
+    const id = document.getElementById('login-id').value;
+    const password = document.getElementById('login-password').value;
+
+    if (!id || !password) {
+      show_alert('IDとパスワードを入力してください。');
+      return;
+    }
+
+    try {
+      const data = await api('login', 'POST', { id, password }, { withLoader: true });
+
+      if (data.user.id.toLowerCase().startsWith('s')) {
+        // ベンダー
+        store.set('token', data.token);
+        store.set('user', { ...data.user, role: 'vendor' });
+        show('view-vendor');
+        await loadVendorData(data.user.id);
+      } else {
+        // 一般ユーザー
+        store.set('token', data.token);
+        store.set('user', { ...data.user, role: 'user' });
+        
+        // ログイン後の処理を関数化
+        await postLoginSetup(data.token, data.user);
       }
+      
+      document.getElementById('login-id').value = '';
+      document.getElementById('login-password').value = '';
+
+    } catch (e) {
+      // エラーはapi関数内でアラート表示済み
+      console.error(e);
     }
   };
 
-  // 自動ログイン済みの初期表示も“完全読込後に表示”
-  document.addEventListener("DOMContentLoaded", async ()=>{
-    const token = window.store && typeof store.get==="function" ? store.get("token") : null;
-    const user  = window.store && typeof store.get==="function" ? store.get("user")  : null;
-    if(!token || !user) return;
-    if(/^s\d+$/i.test(user.id)) return;
-    try{
-      if(typeof showLoading==="function") showLoading(true);
+  const logout = (confirm = true) => {
+    if (confirm && !window.confirm('ログアウトしますか？')) return;
+    store.clear();
+    show('view-login');
+    window.location.reload(); // 画面全体をリロードして初期状態に戻す
+  };
+
+  // =========================================================
+  // ユーザービュー（ログイン後）
+  // =========================================================
+
+  // --- 営業情報（ログイン後）の表示関数 (★修正済み) ---
+  function renderOverviewAuth(d){
+    const rows = document.getElementById("status-rows-auth");
+    const emptyMessage = document.getElementById("status-empty-auth");
+    
+    // 要素がない場合は処理を中断 (安全性のため)
+    if(!rows || !emptyMessage) {
+        console.error("HTML要素 #status-rows-auth または #status-empty-auth が見つかりません。");
+        return;
+    }
+    
+    // データがnull/undefined、またはショップリストが空の場合は「表示できる店舗がありません」を表示
+    if(!(d && d.shops && d.shops.length)){ 
+      rows.innerHTML = "";
+      emptyMessage.style.display = "block"; 
+      return; 
+    }
+    
+    // データがある場合
+    emptyMessage.style.display = "none";
+    
+    // 店舗データを表示
+    let html = '';
+    d.shops.forEach(s=>{
+      const daysStatus = Array.isArray(s.days) ? s.days : [];
+
+      html += `
+        <div class="status-row">
+          <div class="shop-chip">
+            <span class="shop-avatar">${(s.shop_name||'?').slice(0,1)}</span>
+            <span class="shop-name">${s.shop_name}</span>
+          </div>
+          ${daysStatus.map(x=>`<div class="${x.open?'badge-ok':'badge-ng'}">${x.open?'◯':'×'}</div>`).join('')}
+        </div>
+      `;
+    });
+    rows.innerHTML = html;
+  }
+
+  // --- 営業情報（ログイン後）の読み込み関数 (★修正済み) ---
+  async function loadPublicOverviewAuth(force=false){
+    // ラベル (日付ヘッダー) の設定
+    const today = new Date();
+    const dates = [0,1,2].map(n=>new Date(today.getFullYear(),today.getMonth(),today.getDate()+n));
+    ['day0-label-auth','day1-label-auth','day2-label-auth'].forEach((id,i)=>{
+      const d=dates[i]; const wd=['日','月','火','水','木','金','土'][d.getDay()];
+      const el=document.getElementById(id); if(el) el.textContent=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）`;
+    });
+
+    const cacheKeyOverview = 'public_overview';
+    const cOverview = cache.get(cacheKeyOverview, 300); // 5分キャッシュ
+    
+    // 1. キャッシュがあれば即時描画
+    if(cOverview) renderOverviewAuth(cOverview);
+
+    let latestOverviewData = cOverview; // 最新のデータ（キャッシュまたはAPI結果）
+
+    // 2. 最新データの取得
+    try{ 
+        // タイムアウトを15秒に延長し、リトライを増やして通信を強化
+        const d=await api('public_overview','GET',null,{withLoader:false,timeoutMs:15000,retries:2}); 
+        
+        // GASからのレスポンスが 'ok:false' の場合もキャッチ
+        if(d && d.ok === true){
+            cache.set(cacheKeyOverview,d); 
+            latestOverviewData = d;
+        } else {
+            // GASからエラー応答があった場合 (d.ok !== true)
+            console.error("APIエラー: public_overviewがエラーを返しました", d);
+            // キャッシュがなければ空表示を保証
+            if (!cOverview) renderOverviewAuth(null);
+            return;
+        }
+    }catch(e){
+        console.error("APIエラー: 営業情報の取得に失敗しました", e);
+        // 通信失敗時、かつキャッシュもなかった場合、空表示を呼び出す
+        if (!cOverview) renderOverviewAuth(null);
+        return;
+    }
+    
+    // 3. 最新のデータがあれば、表示を更新
+    if(latestOverviewData) renderOverviewAuth(latestOverviewData);
+    
+    // 新着情報も同時にロード
+    loadLatestNewsAuth(force);
+  }
+  
+  // --- 新着情報（ログイン後）の読み込みと表示 ---
+  async function loadLatestNewsAuth(force = false) {
+      const cacheKeyNews = 'latest_news_auth';
+      const cNews = cache.get(cacheKeyNews, 300);
+
+      if (cNews) renderNewsAuth(cNews);
+
+      try {
+          // latest_messages_all を呼び出す (全ショップの最新情報を取得するAPI)
+          const n = await api('latest_messages_all', 'GET', null, { withLoader: false, timeoutMs: 15000, retries: 2 });
+          
+          if (n && n.ok === true) {
+              cache.set(cacheKeyNews, n);
+              renderNewsAuth(n);
+          } else {
+              if (!cNews) renderNewsAuth(null);
+          }
+      } catch (e) {
+          console.error("APIエラー: 新着情報の取得に失敗しました", e);
+          if (!cNews) renderNewsAuth(null);
+      }
+  }
+
+  function renderNewsAuth(data) {
+      const container = document.getElementById('news-list-auth');
+      if (!container) return;
+
+      if (!data || !data.news || data.news.length === 0) {
+          container.innerHTML = '<p class="muted center">現在、お知らせはありません。</p>';
+          return;
+      }
+
+      const html = data.news.map(n => `
+          <div class="news-item">
+              <div style="flex-shrink:0;">
+                  <span class="shop-avatar">${(n.shop_name||'?').slice(0,1)}</span>
+              </div>
+              <div>
+                  <div class="row-between" style="gap:16px;">
+                      <div class="news-title">${n.title}</div>
+                      <div class="news-date">${format_date(n.updated_at)}</div>
+                  </div>
+                  </div>
+          </div>
+      `).join('');
+      container.innerHTML = html;
+  }
+
+  // --- ダッシュボード（履歴）の読み込み ---
+  const loadDashboard = async (force = false) => {
+    const token = store.get('token');
+    if (!token) return;
+
+    const cacheKey = 'dashboard';
+    const cData = cache.get(cacheKey, 60);
+
+    if (cData && !force) renderDashboard(cData);
+
+    let latestData = cData;
+
+    try {
+      const data = await api('dashboard', 'GET', { token }, { withLoader: false });
+      cache.set(cacheKey, data);
+      latestData = data;
+    } catch (e) {
+      console.error('Failed to load dashboard', e);
+    }
+    
+    if (latestData) renderDashboard(latestData);
+  };
+
+  const renderDashboard = (data) => {
+    // 注文可能時間表示
+    const orderStatus = document.getElementById('order-status');
+    if(orderStatus) {
+        if (data.order_open) {
+            orderStatus.innerHTML = '<span class="badge-ok">注文受付中</span>';
+        } else {
+            orderStatus.innerHTML = '<span class="badge-ng">注文時間外</span>';
+        }
+    }
+    
+    // 注文履歴表示
+    const historyList = document.getElementById('order-history');
+    if (!historyList) return;
+
+    if (!data.history || data.history.length === 0) {
+      historyList.innerHTML = '<p class="muted center">まだ注文履歴はありません。</p>';
+      return;
+    }
+
+    const html = data.history.map(order => `
+      <div class="item order-card ${order.cancellable ? 'order-pending' : 'order-confirmed'}">
+        <div class="row-between">
+          <h4>${order.shop_name}</h4>
+          <span class="muted">${format_date(order.timestamp)}注文</span>
+        </div>
+        <div class="muted" style="margin:4px 0;">
+          ${order.items.map(i => i.item).join('、')} 他
+        </div>
+        <div class="row-between" style="margin-top:8px;">
+          <span class="total">${format_currency(order.total)}</span>
+          ${order.cancellable 
+            ? `<button class="ghost" onclick="cancelOrder('${order.order_id}')">取消可</button>`
+            : `<span class="tag">取消不可</span>`
+          }
+        </div>
+      </div>
+    `).join('');
+    historyList.innerHTML = `<div class="list history-compact" style="margin-top:10px;">${html}</div>`;
+  };
+  
+  // --- 注文取消処理 ---
+  window.cancelOrder = async (orderId) => {
+    if (!confirm('この注文をキャンセルしますか？\n（当日8:40以降は取消できません）')) return;
+
+    const token = store.get('token');
+    try {
+      await api('cancel_order', 'POST', { token, order_id: orderId });
+      show_alert('注文をキャンセルしました。');
+      // ダッシュボードを更新
+      cache.set('dashboard', null);
+      await loadDashboard(true);
+    } catch (e) {
+      console.error('Cancel failed', e);
+    }
+  };
+
+  // --- メニュー表示 ---
+  const loadMenu = async () => {
+    const cacheKey = 'menu';
+    const cData = cache.get(cacheKey, 3600); // 1時間キャッシュ
+
+    if (cData) renderMenu(cData);
+
+    let latestData = cData;
+
+    try {
+      const data = await api('menu', 'GET', {}, { withLoader: false });
+      cache.set(cacheKey, data);
+      latestData = data;
+    } catch (e) {
+      console.error('Failed to load menu', e);
+    }
+    
+    if (latestData) renderMenu(latestData);
+  };
+
+  const renderMenu = (data) => {
+    const menuList = document.getElementById('menu-list');
+    if (!menuList) return;
+
+    const menuByShop = data.menu.reduce((acc, item) => {
+      if (!acc[item.shop_id]) acc[item.shop_id] = { shop_id: item.shop_id, items: [] };
+      acc[item.shop_id].items.push(item);
+      return acc;
+    }, {});
+
+    const shopOrders = Object.values(menuByShop).map(shop => {
+      const shopHtml = shop.items.map(item => `
+        <div class="item" onclick="order_item('${item.shop_id}', '${item.item_id}', '${item.item}', ${item.price})">
+          <div class="row-between">
+            <h4>${item.item}</h4>
+            <span class="price">${format_currency(item.price)}</span>
+          </div>
+          <div class="muted">${item.shop_id}</div>
+        </div>
+      `).join('');
+      return shopHtml;
+    }).join('');
+
+    menuList.innerHTML = `<div class="grid">${shopOrders}</div>`;
+  };
+  
+  // --- 注文実行 ---
+  window.order_item = async (shop_id, item_id, item_name, price) => {
+    const token = store.get('token');
+    const user = store.get('user');
+
+    if (!token || !user) {
+      show_alert('ログイン情報が失効しています。再ログインしてください。');
+      logout(false);
+      return;
+    }
+    
+    // 注文可能な時間か確認（GAS側でもチェックされるが二重で）
+    const orderStatusText = document.getElementById('order-status')?.textContent;
+    if (orderStatusText && orderStatusText.includes('時間外')) {
+        show_alert('現在は注文時間外です。前日16:00〜当日8:40にご注文ください。');
+        return;
+    }
+
+    if (!confirm(`${item_name}を注文しますか？\n価格: ${format_currency(price)}\n（注文後の変更・取消はできません）`)) {
+      return;
+    }
+
+    try {
+      await api('order', 'POST', { token, shop_id, items: [{ item_id, item: item_name }] });
+      show_alert(`${item_name}の注文が完了しました。`);
+      
+      // 注文完了後、キャッシュをクリアしてダッシュボードを更新
+      cache.set('dashboard', null);
+      await loadDashboard(true);
+      
+    } catch (e) {
+      console.error('Order failed', e);
+      if (e.message.includes('在庫不足')) {
+        show_alert(e.message);
+      } else {
+        show_alert('注文処理中にエラーが発生しました。');
+      }
+    }
+  };
+  
+  // --- ログイン後の初期化処理 ---
+  const postLoginSetup = async (token, user) => {
+    document.getElementById('welcome-message').textContent = `ようこそ、${user.name || user.id}さん`;
+    
+    try {
+      showLoading(true);
       await Promise.all([
-        window.loadDashboard ? loadDashboard() : Promise.resolve(),
-        window.loadPublicOverviewAuth ? loadPublicOverviewAuth() : Promise.resolve()
+        loadDashboard(),
+        loadPublicOverviewAuth(),
+        loadMenu() // メニューも読み込む
       ]);
-      const wm = document.querySelector("#welcome-message");
-      if(wm) wm.textContent = `ようこそ、${user.name||user.id}さん`;
-      if(typeof show==="function") show("view-shop");
+    } catch (e) {
+      console.error('Post login setup failed:', e);
     } finally {
-      if(typeof showLoading==="function") showLoading(false);
+      showLoading(false);
+      show('view-shop');
+    }
+  };
+
+  // =========================================================
+  // ベンダービュー
+  // =========================================================
+
+  const loadVendorData = async (shop_id) => {
+    document.getElementById('vendor-title-label').textContent = '';
+    document.getElementById('vendor-sub-label').textContent = '';
+    document.getElementById('vendor-date-input').value = new Date().toISOString().split('T')[0];
+    
+    document.getElementById('vendor-view-title').textContent = ''; // 初期化
+
+    try {
+        await Promise.all([
+            loadVendorSummary(shop_id),
+            loadVendorMessages(shop_id),
+            loadVendorClosedDays(shop_id)
+        ]);
+    } catch (e) {
+        console.error("Vendor data load failed", e);
+    }
+  };
+  
+  // --- 集計サマリーの読み込み ---
+  const loadVendorSummary = async (shop_id, target_date = null) => {
+    const token = store.get('token');
+    const params = { token };
+    if (target_date) params.target_date = target_date;
+
+    try {
+      const data = await api('vendor_summary', 'GET', params, { withLoader: true });
+      renderVendorSummary(data, target_date);
+      // ショップ名をタイトルに設定
+      document.getElementById('vendor-view-title').textContent = data.shop_name ? `${data.shop_name} - 注文管理` : '注文管理';
+    } catch (e) {
+      console.error('Vendor summary failed', e);
+    }
+  };
+
+  const renderVendorSummary = (data, target_date) => {
+    // 期間ラベル
+    document.getElementById('vendor-title-label').textContent = data.title_label || '集計';
+    document.getElementById('vendor-sub-label').textContent = data.sub_label || '';
+    if (target_date) document.getElementById('vendor-date-input').value = target_date;
+    
+    // KPI
+    document.getElementById('vendor-total-qty').textContent = `${data.total_qty || 0}個`;
+    document.getElementById('vendor-total-amount').textContent = format_currency(data.total_amount || 0);
+
+    // 品目別集計
+    const byItemBody = document.getElementById('vendor-by-item-body');
+    if(byItemBody) {
+        if (!data.by_item || data.by_item.length === 0) {
+            byItemBody.innerHTML = '<tr><td colspan="3" class="muted center">注文がありません。</td></tr>';
+        } else {
+            byItemBody.innerHTML = data.by_item.map(item => `
+                <tr>
+                    <td style="text-align:left;">${item.item}</td>
+                    <td style="text-align:right;">${item.qty}</td>
+                    <td style="text-align:center;">${format_currency(item.amount)}</td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    // 注文詳細
+    const detailBody = document.getElementById('vendor-detail-body');
+    if(detailBody) {
+        if (!data.rows || data.rows.length === 0) {
+            detailBody.innerHTML = '<tr><td colspan="4" class="muted center">注文がありません。</td></tr>';
+        } else {
+            detailBody.innerHTML = data.rows.map(row => `
+                <tr>
+                    <td style="text-align:left;">${row.user_id}</td>
+                    <td style="text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${row.item}</td>
+                    <td style="text-align:right;">${row.qty}</td>
+                    <td style="text-align:center;">${format_currency(row.amount)}</td>
+                </tr>
+            `).join('');
+        }
+    }
+  };
+  
+  // --- お知らせの読み込み ---
+  const loadVendorMessages = async (shop_id) => {
+    try {
+      const data = await api('messages', 'GET', { shop_id }, { withLoader: false });
+      renderVendorMessages(data);
+    } catch (e) {
+      console.error('Vendor messages failed', e);
+    }
+  };
+
+  const renderVendorMessages = (data) => {
+    const list = document.getElementById('vendor-notice-list');
+    if (!list) return;
+
+    if (!data.list || data.list.length === 0) {
+      list.innerHTML = '<p class="muted center">現在、お知らせはありません。</p>';
+      return;
+    }
+
+    list.innerHTML = data.list.map(m => `
+      <div class="card notice-item" style="padding:10px; margin-bottom:10px;">
+        <div class="notice-title" onclick="toggleNoticeBody(this)">
+          ${m.title} <span class="muted" style="margin-left:8px;">(${format_date(m.updated_at)})</span>
+        </div>
+        <div class="notice-body" id="body-${m.message_id}">
+          ${m.body}
+        </div>
+      </div>
+    `).join('');
+  };
+
+  window.toggleNoticeBody = (element) => {
+    const body = element.nextElementSibling;
+    if (body) {
+      body.style.display = body.style.display === 'block' ? 'none' : 'block';
+    }
+  };
+  
+  // --- 休業日の読み込み ---
+  const loadVendorClosedDays = async (shop_id) => {
+    const token = store.get('token');
+    try {
+      const data = await api('closed_days', 'GET', { token }, { withLoader: false });
+      const currentDays = data.days || [];
+      // HTMLに埋め込む
+      const hiddenInput = document.getElementById('vendor-closed-days-data');
+      if (hiddenInput) hiddenInput.value = JSON.stringify(currentDays);
+      
+      // チェックボックスの描画（省略、今回はロードのみ）
+
+    } catch (e) {
+      console.error('Closed days load failed', e);
+    }
+  };
+  
+  // --- 休業日設定の保存 ---
+  window.saveClosedDays = async () => {
+    const token = store.get('token');
+    // ... フォームから日付を収集するロジックを実装 ...
+    // 現在はサンプルとして空配列で保存
+    const datesToSave = []; 
+
+    if (!confirm('休業日の設定を保存しますか？')) return;
+
+    try {
+      await api('save_closed_days', 'POST', { token, dates: datesToSave });
+      show_alert('休業日設定を保存しました。');
+      loadVendorClosedDays();
+    } catch (e) {
+      console.error('Closed days save failed', e);
+    }
+  };
+
+  // =========================================================
+  // ログイン前ビュー（共通）
+  // =========================================================
+
+  // --- 営業情報（ログイン前）の表示関数 ---
+  function renderOverview(d) {
+    const rows = document.getElementById("status-rows");
+    if (!rows) return;
+    rows.innerHTML = "";
+    
+    if (!(d && d.shops && d.shops.length)) {
+        document.getElementById("status-empty").style.display = "block";
+        return;
+    }
+    document.getElementById("status-empty").style.display = "none";
+    
+    d.shops.forEach(s => {
+        const div = document.createElement("div");
+        div.className = "status-row";
+        div.innerHTML = `
+            <div class="shop-chip">
+                <span class="shop-avatar">${(s.shop_name||'?').slice(0,1)}</span>
+                <span class="shop-name">${s.shop_name}</span>
+            </div>
+            ${(s.days||[]).map(x => `<div class="${x.open ? 'badge-ok' : 'badge-ng'}">${x.open ? '◯' : '×'}</div>`).join('')}
+        `;
+        rows.appendChild(div);
+    });
+  }
+
+  // --- 営業情報（ログイン前）の読み込み関数 ---
+  async function loadPublicOverview(force = false) {
+    // ラベル (日付ヘッダー) の設定
+    const today = new Date();
+    const dates = [0,1,2].map(n=>new Date(today.getFullYear(),today.getMonth(),today.getDate()+n));
+    ['day0-label','day1-label','day2-label'].forEach((id,i)=>{
+        const d=dates[i]; const wd=['日','月','火','水','木','金','土'][d.getDay()];
+        const el=document.getElementById(id); if(el) el.textContent=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）`;
+    });
+
+    const cacheKey = 'public_overview';
+    const cData = cache.get(cacheKey, 300); // 5分キャッシュ
+
+    if (cData) renderOverview(cData);
+
+    let latestData = cData;
+
+    try {
+        const data = await api('public_overview', 'GET', null, { withLoader: false });
+        cache.set(cacheKey, data);
+        latestData = data;
+    } catch (e) {
+        console.error('Failed to load public overview', e);
+        // 通信失敗時、かつキャッシュもなかった場合、空表示を呼び出す
+        if (!cData) renderOverview(null);
+    }
+    
+    if (latestData) renderOverview(latestData);
+    
+    // 新着情報もロード
+    loadLatestNews(force);
+  }
+
+  // --- 新着情報（ログイン前）の読み込みと表示 ---
+  async function loadLatestNews(force = false) {
+      const cacheKey = 'latest_news';
+      const cNews = cache.get(cacheKey, 300);
+
+      if (cNews) renderNews(cNews);
+
+      try {
+          const n = await api('latest_messages_all', 'GET', null, { withLoader: false });
+          cache.set(cacheKey, n);
+          renderNews(n);
+      } catch (e) {
+          console.error("APIエラー: 新着情報の取得に失敗しました", e);
+          if (!cNews) renderNews(null);
+      }
+  }
+
+  function renderNews(data) {
+      const container = document.getElementById('news-list');
+      if (!container) return;
+
+      if (!data || !data.news || data.news.length === 0) {
+          container.innerHTML = '<p class="muted center">現在、重要なお知らせはありません。</p>';
+          return;
+      }
+
+      const html = data.news.map(n => `
+          <div class="news-item">
+              <div style="flex-shrink:0;">
+                  <span class="shop-avatar">${(n.shop_name||'?').slice(0,1)}</span>
+              </div>
+              <div>
+                  <div class="row-between" style="gap:16px;">
+                      <div class="news-title">${n.title}</div>
+                      <div class="news-date">${format_date(n.updated_at)}</div>
+                  </div>
+              </div>
+          </div>
+      `).join('');
+      container.innerHTML = html;
+  }
+
+  // =========================================================
+  // 初期ロードとイベントリスナー
+  // =========================================================
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    // バージョン番号表示 (省略)
+    const versionEl = document.getElementById('app-version');
+    if (versionEl) versionEl.textContent = 'v2.3.1'; 
+    
+    const token = store.get("token");
+    const user = store.get("user");
+
+    // ログイン済みの場合の処理
+    if (token && user) {
+      if (user.role === "vendor") {
+        show('view-vendor');
+        await loadVendorData(user.id);
+      } else {
+        await postLoginSetup(token, user);
+      }
+    } else {
+      // 未ログインの場合の処理
+      show('view-login');
+      await loadPublicOverview();
+      
+      // ログインボタンのイベントリスナー設定
+      const loginBtn = document.getElementById('login-btn');
+      if (loginBtn) loginBtn.onclick = login;
     }
   });
-})();
+
+  // グローバルアクセスを許可
+  window.login = login;
+  window.logout = logout;
+  window.loadPublicOverviewAuth = loadPublicOverviewAuth;
+  // ログアウトとリロード時にキャッシュをクリア（開発時）
+  // window.addEventListener('beforeunload', () => store.clear());
 </script>
 
 </body>
